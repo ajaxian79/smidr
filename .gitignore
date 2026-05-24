@@ -1,0 +1,7 @@
+build/
+cmake-build-*/
+.cache/
+*.o
+*.a
+imgui.ini
+compile_commands.json
