@@ -57,6 +57,12 @@ void draw_menubar(App& app) {
             if (ImGui::MenuItem("Cone"))     app.add_primitive(PrimitiveType::Cone);
             if (ImGui::MenuItem("Torus"))    app.add_primitive(PrimitiveType::Torus);
             ImGui::Separator();
+            if (ImGui::MenuItem("Ellipsoid")) app.add_primitive(PrimitiveType::Ellipsoid);
+            if (ImGui::MenuItem("Pipe"))      app.add_primitive(PrimitiveType::Pipe);
+            if (ImGui::MenuItem("Wedge"))     app.add_primitive(PrimitiveType::Wedge);
+            if (ImGui::MenuItem("Arb8"))      app.add_primitive(PrimitiveType::Arb8);
+            if (ImGui::MenuItem("Halfspace")) app.add_primitive(PrimitiveType::Halfspace);
+            ImGui::Separator();
             if (ImGui::MenuItem("Group"))
                 app.document().scene().add_group("Group");
             ImGui::EndMenu();

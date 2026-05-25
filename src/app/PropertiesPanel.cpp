@@ -97,6 +97,48 @@ void draw_properties(App& app) {
                 prim_changed |= ImGui::DragFloat("Minor R", &t->minor_radius, 0.01f, 0.01f, 50.f);
                 break;
             }
+            case PrimitiveType::Ellipsoid: {
+                auto* e = static_cast<Ellipsoid*>(node->primitive.get());
+                ImGui::SetNextItemWidth(-1);
+                prim_changed |= ImGui::DragFloat3("Radii", &e->radii.x, 0.01f, 0.01f, 100.f);
+                break;
+            }
+            case PrimitiveType::Halfspace: {
+                auto* h = static_cast<Halfspace*>(node->primitive.get());
+                ImGui::SetNextItemWidth(-1);
+                prim_changed |= ImGui::DragFloat3("Normal", &h->normal.x, 0.01f);
+                ImGui::SetNextItemWidth(120);
+                prim_changed |= ImGui::DragFloat("Offset", &h->offset, 0.05f);
+                break;
+            }
+            case PrimitiveType::Pipe: {
+                auto* p = static_cast<Pipe*>(node->primitive.get());
+                ImGui::SetNextItemWidth(120);
+                prim_changed |= ImGui::DragFloat("Inner R", &p->inner_radius, 0.01f, 0.01f, 100.f);
+                ImGui::SetNextItemWidth(120);
+                prim_changed |= ImGui::DragFloat("Outer R", &p->outer_radius, 0.01f, 0.01f, 100.f);
+                ImGui::SetNextItemWidth(120);
+                prim_changed |= ImGui::DragFloat("Height", &p->height, 0.01f, 0.01f, 100.f);
+                break;
+            }
+            case PrimitiveType::Wedge: {
+                auto* w = static_cast<Wedge*>(node->primitive.get());
+                ImGui::SetNextItemWidth(-1);
+                prim_changed |= ImGui::DragFloat3("Size", &w->size.x, 0.01f, 0.01f, 100.f);
+                ImGui::SetNextItemWidth(120);
+                prim_changed |= ImGui::DragFloat("Top Width", &w->top_width, 0.01f, 0.f, 100.f);
+                break;
+            }
+            case PrimitiveType::Arb8: {
+                auto* a = static_cast<Arb8*>(node->primitive.get());
+                for (int i = 0; i < 8; ++i) {
+                    char label[16];
+                    std::snprintf(label, sizeof label, "V%d", i);
+                    ImGui::SetNextItemWidth(-1);
+                    prim_changed |= ImGui::DragFloat3(label, &a->verts[i].x, 0.01f);
+                }
+                break;
+            }
         }
 
         if (prim_changed) app.document().mark_dirty();

@@ -45,6 +45,26 @@ void App::add_primitive(PrimitiveType type) {
             prim = std::make_unique<Torus>();
             base_name = "Torus";
             break;
+        case PrimitiveType::Ellipsoid:
+            prim = std::make_unique<Ellipsoid>();
+            base_name = "Ellipsoid";
+            break;
+        case PrimitiveType::Halfspace:
+            prim = std::make_unique<Halfspace>();
+            base_name = "Halfspace";
+            break;
+        case PrimitiveType::Pipe:
+            prim = std::make_unique<Pipe>();
+            base_name = "Pipe";
+            break;
+        case PrimitiveType::Wedge:
+            prim = std::make_unique<Wedge>();
+            base_name = "Wedge";
+            break;
+        case PrimitiveType::Arb8:
+            prim = std::make_unique<Arb8>();
+            base_name = "Arb8";
+            break;
     }
 
     char name[64];

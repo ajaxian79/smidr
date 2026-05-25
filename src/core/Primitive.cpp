@@ -15,21 +15,31 @@ AABB Mesh::bounds() const {
 
 const char* primitive_type_name(PrimitiveType t) {
     switch (t) {
-        case PrimitiveType::Sphere:   return "sphere";
-        case PrimitiveType::Box:      return "box";
-        case PrimitiveType::Cylinder: return "cylinder";
-        case PrimitiveType::Cone:     return "cone";
-        case PrimitiveType::Torus:    return "torus";
+        case PrimitiveType::Sphere:    return "sphere";
+        case PrimitiveType::Box:       return "box";
+        case PrimitiveType::Cylinder:  return "cylinder";
+        case PrimitiveType::Cone:      return "cone";
+        case PrimitiveType::Torus:     return "torus";
+        case PrimitiveType::Ellipsoid: return "ellipsoid";
+        case PrimitiveType::Halfspace: return "halfspace";
+        case PrimitiveType::Pipe:      return "pipe";
+        case PrimitiveType::Wedge:     return "wedge";
+        case PrimitiveType::Arb8:      return "arb8";
     }
     return "unknown";
 }
 
 PrimitiveType primitive_type_from_name(const std::string& name) {
-    if (name == "sphere")   return PrimitiveType::Sphere;
-    if (name == "box")      return PrimitiveType::Box;
-    if (name == "cylinder") return PrimitiveType::Cylinder;
-    if (name == "cone")     return PrimitiveType::Cone;
-    if (name == "torus")    return PrimitiveType::Torus;
+    if (name == "sphere")    return PrimitiveType::Sphere;
+    if (name == "box")       return PrimitiveType::Box;
+    if (name == "cylinder")  return PrimitiveType::Cylinder;
+    if (name == "cone")      return PrimitiveType::Cone;
+    if (name == "torus")     return PrimitiveType::Torus;
+    if (name == "ellipsoid") return PrimitiveType::Ellipsoid;
+    if (name == "halfspace") return PrimitiveType::Halfspace;
+    if (name == "pipe")      return PrimitiveType::Pipe;
+    if (name == "wedge")     return PrimitiveType::Wedge;
+    if (name == "arb8")      return PrimitiveType::Arb8;
     throw std::runtime_error("Unknown primitive type: " + name);
 }
 
@@ -63,6 +73,48 @@ std::unique_ptr<Primitive> Primitive::from_json(const nlohmann::json& j) {
             auto p = std::make_unique<Torus>();
             p->major_radius = j.value("major_radius", 1.f);
             p->minor_radius = j.value("minor_radius", 0.3f);
+            return p;
+        }
+        case PrimitiveType::Ellipsoid: {
+            auto p = std::make_unique<Ellipsoid>();
+            if (j.contains("radii")) {
+                auto& r = j["radii"];
+                p->radii = {r[0].get<float>(), r[1].get<float>(), r[2].get<float>()};
+            }
+            return p;
+        }
+        case PrimitiveType::Halfspace: {
+            auto p = std::make_unique<Halfspace>();
+            if (j.contains("normal")) {
+                auto& n = j["normal"];
+                p->normal = Vec3{n[0].get<float>(), n[1].get<float>(), n[2].get<float>()}.normalized();
+            }
+            p->offset = j.value("offset", 0.f);
+            return p;
+        }
+        case PrimitiveType::Pipe: {
+            auto p = std::make_unique<Pipe>();
+            p->inner_radius = j.value("inner_radius", 0.3f);
+            p->outer_radius = j.value("outer_radius", 0.5f);
+            p->height = j.value("height", 2.f);
+            return p;
+        }
+        case PrimitiveType::Wedge: {
+            auto p = std::make_unique<Wedge>();
+            if (j.contains("size")) {
+                auto& s = j["size"];
+                p->size = {s[0].get<float>(), s[1].get<float>(), s[2].get<float>()};
+            }
+            p->top_width = j.value("top_width", 0.f);
+            return p;
+        }
+        case PrimitiveType::Arb8: {
+            auto p = std::make_unique<Arb8>();
+            if (j.contains("verts")) {
+                auto& v = j["verts"];
+                for (int i = 0; i < 8 && i < static_cast<int>(v.size()); ++i)
+                    p->verts[i] = {v[i][0].get<float>(), v[i][1].get<float>(), v[i][2].get<float>()};
+            }
             return p;
         }
     }
@@ -307,6 +359,279 @@ void Torus::to_json(nlohmann::json& j) const {
     j["type"] = "torus";
     j["major_radius"] = major_radius;
     j["minor_radius"] = minor_radius;
+}
+
+// ── Ellipsoid ──────────────────────────────────────────────────
+
+Mesh Ellipsoid::generate_mesh(int detail) const {
+    Mesh mesh;
+    int stacks = detail, slices = detail * 2;
+
+    for (int i = 0; i <= stacks; ++i) {
+        float phi = kPi * static_cast<float>(i) / static_cast<float>(stacks);
+        float sp = std::sin(phi), cp = std::cos(phi);
+        for (int j = 0; j <= slices; ++j) {
+            float theta = kTwoPi * static_cast<float>(j) / static_cast<float>(slices);
+            float st = std::sin(theta), ct = std::cos(theta);
+            Vec3 unit{sp * ct, cp, sp * st};
+            Vec3 pos{unit.x * radii.x, unit.y * radii.y, unit.z * radii.z};
+            Vec3 n{unit.x / (radii.x * radii.x),
+                    unit.y / (radii.y * radii.y),
+                    unit.z / (radii.z * radii.z)};
+            mesh.vertices.push_back({pos, n.normalized()});
+        }
+    }
+    for (int i = 0; i < stacks; ++i) {
+        for (int j = 0; j < slices; ++j) {
+            uint32_t a = static_cast<uint32_t>(i * (slices + 1) + j);
+            uint32_t b = a + static_cast<uint32_t>(slices + 1);
+            mesh.indices.insert(mesh.indices.end(), {a, b, a + 1, a + 1, b, b + 1});
+        }
+    }
+    return mesh;
+}
+
+AABB Ellipsoid::local_bounds() const {
+    return {{-radii.x, -radii.y, -radii.z}, {radii.x, radii.y, radii.z}};
+}
+
+std::unique_ptr<Primitive> Ellipsoid::clone() const {
+    return std::make_unique<Ellipsoid>(*this);
+}
+
+void Ellipsoid::to_json(nlohmann::json& j) const {
+    j["type"] = "ellipsoid";
+    j["radii"] = {radii.x, radii.y, radii.z};
+}
+
+// ── Halfspace ──────────────────────────────────────────────────
+
+Mesh Halfspace::generate_mesh(int) const {
+    Mesh mesh;
+    Vec3 t1, t2;
+    if (std::abs(normal.x) < 0.9f) t1 = normal.cross({1, 0, 0}).normalized();
+    else                            t1 = normal.cross({0, 1, 0}).normalized();
+    t2 = normal.cross(t1).normalized();
+
+    constexpr float sz = 10.f;
+    Vec3 center = normal * offset;
+    Vec3 corners[4] = {
+        center + t1 * sz + t2 * sz,
+        center - t1 * sz + t2 * sz,
+        center - t1 * sz - t2 * sz,
+        center + t1 * sz - t2 * sz,
+    };
+    for (auto& c : corners) mesh.vertices.push_back({c, normal});
+    mesh.indices = {0, 1, 2, 0, 2, 3};
+    return mesh;
+}
+
+AABB Halfspace::local_bounds() const {
+    return {{-10, -10, -10}, {10, 10, 10}};
+}
+
+std::unique_ptr<Primitive> Halfspace::clone() const {
+    return std::make_unique<Halfspace>(*this);
+}
+
+void Halfspace::to_json(nlohmann::json& j) const {
+    j["type"] = "halfspace";
+    j["normal"] = {normal.x, normal.y, normal.z};
+    j["offset"] = offset;
+}
+
+// ── Pipe ───────────────────────────────────────────────────────
+
+Mesh Pipe::generate_mesh(int detail) const {
+    Mesh mesh;
+    float half_h = height * 0.5f;
+
+    auto ring = [&](float y, float r, Vec3 n) {
+        for (int i = 0; i <= detail; ++i) {
+            float theta = kTwoPi * static_cast<float>(i) / static_cast<float>(detail);
+            mesh.vertices.push_back(
+                {{std::cos(theta) * r, y, std::sin(theta) * r}, n});
+        }
+    };
+
+    uint32_t base = 0;
+    ring(half_h, outer_radius, {0, 0, 1});
+    ring(half_h, outer_radius, {0, 0, 1});
+    base = 0;
+    mesh.vertices.clear();
+
+    auto tube = [&](float r, float ndir) {
+        uint32_t start = static_cast<uint32_t>(mesh.vertices.size());
+        for (int i = 0; i <= detail; ++i) {
+            float theta = kTwoPi * static_cast<float>(i) / static_cast<float>(detail);
+            float ct = std::cos(theta), st = std::sin(theta);
+            Vec3 n{ct * ndir, 0, st * ndir};
+            mesh.vertices.push_back({{ct * r,  half_h, st * r}, n});
+            mesh.vertices.push_back({{ct * r, -half_h, st * r}, n});
+        }
+        for (int i = 0; i < detail; ++i) {
+            uint32_t a = start + static_cast<uint32_t>(i * 2);
+            if (ndir > 0)
+                mesh.indices.insert(mesh.indices.end(), {a, a+1, a+2, a+2, a+1, a+3});
+            else
+                mesh.indices.insert(mesh.indices.end(), {a, a+2, a+1, a+1, a+2, a+3});
+        }
+    };
+    tube(outer_radius, 1.f);
+    tube(inner_radius, -1.f);
+
+    auto annulus = [&](float y, Vec3 n) {
+        uint32_t ci = static_cast<uint32_t>(mesh.vertices.size());
+        for (int i = 0; i <= detail; ++i) {
+            float theta = kTwoPi * static_cast<float>(i) / static_cast<float>(detail);
+            float ct = std::cos(theta), st = std::sin(theta);
+            mesh.vertices.push_back({{ct * outer_radius, y, st * outer_radius}, n});
+            mesh.vertices.push_back({{ct * inner_radius, y, st * inner_radius}, n});
+        }
+        for (int i = 0; i < detail; ++i) {
+            uint32_t a = ci + static_cast<uint32_t>(i * 2);
+            if (y > 0)
+                mesh.indices.insert(mesh.indices.end(), {a, a+2, a+1, a+1, a+2, a+3});
+            else
+                mesh.indices.insert(mesh.indices.end(), {a, a+1, a+2, a+2, a+1, a+3});
+        }
+    };
+    annulus(half_h, {0, 1, 0});
+    annulus(-half_h, {0, -1, 0});
+
+    return mesh;
+}
+
+AABB Pipe::local_bounds() const {
+    float h = height * 0.5f;
+    return {{-outer_radius, -h, -outer_radius}, {outer_radius, h, outer_radius}};
+}
+
+std::unique_ptr<Primitive> Pipe::clone() const {
+    return std::make_unique<Pipe>(*this);
+}
+
+void Pipe::to_json(nlohmann::json& j) const {
+    j["type"] = "pipe";
+    j["inner_radius"] = inner_radius;
+    j["outer_radius"] = outer_radius;
+    j["height"] = height;
+}
+
+// ── Wedge ──────────────────────────────────────────────────────
+
+Mesh Wedge::generate_mesh(int) const {
+    Mesh mesh;
+    float hx = size.x * 0.5f, hy = size.y, hz = size.z * 0.5f;
+    float tw = top_width * 0.5f;
+
+    Vec3 v[6] = {
+        {-hx, 0, -hz}, { hx, 0, -hz}, { hx, 0, hz}, {-hx, 0, hz},
+        {-tw, hy, -hz}, { tw, hy, -hz},
+    };
+    if (tw < 1e-6f) {
+        Vec3 apex{0, hy, 0};
+        auto tri = [&](Vec3 a, Vec3 b, Vec3 c) {
+            Vec3 n = (b - a).cross(c - a).normalized();
+            auto base = static_cast<uint32_t>(mesh.vertices.size());
+            mesh.vertices.push_back({a, n});
+            mesh.vertices.push_back({b, n});
+            mesh.vertices.push_back({c, n});
+            mesh.indices.insert(mesh.indices.end(), {base, base+1, base+2});
+        };
+        tri(v[0], v[1], apex);
+        tri(v[1], v[2], apex);
+        tri(v[2], v[3], apex);
+        tri(v[3], v[0], apex);
+        Vec3 bn{0, -1, 0};
+        auto base = static_cast<uint32_t>(mesh.vertices.size());
+        for (auto& c : v) mesh.vertices.push_back({c, bn});
+        mesh.indices.insert(mesh.indices.end(), {base, base+2, base+1, base, base+3, base+2});
+    } else {
+        Vec3 v8[8] = {
+            v[0], v[1], v[2], v[3],
+            {-tw, hy, -hz}, {tw, hy, -hz}, {tw, hy, hz}, {-tw, hy, hz},
+        };
+        struct Face { int idx[4]; };
+        Face faces[6] = {
+            {{0,1,5,4}}, {{2,3,7,6}}, {{1,2,6,5}}, {{3,0,4,7}},
+            {{4,5,6,7}}, {{0,3,2,1}},
+        };
+        for (auto& f : faces) {
+            Vec3 a = v8[f.idx[0]], b = v8[f.idx[1]];
+            Vec3 c = v8[f.idx[2]], d = v8[f.idx[3]];
+            Vec3 n = (b - a).cross(d - a).normalized();
+            auto base = static_cast<uint32_t>(mesh.vertices.size());
+            mesh.vertices.push_back({a, n});
+            mesh.vertices.push_back({b, n});
+            mesh.vertices.push_back({c, n});
+            mesh.vertices.push_back({d, n});
+            mesh.indices.insert(mesh.indices.end(), {base, base+1, base+2, base, base+2, base+3});
+        }
+    }
+    return mesh;
+}
+
+AABB Wedge::local_bounds() const {
+    float hx = size.x * 0.5f, hz = size.z * 0.5f;
+    return {{-hx, 0, -hz}, {hx, size.y, hz}};
+}
+
+std::unique_ptr<Primitive> Wedge::clone() const {
+    return std::make_unique<Wedge>(*this);
+}
+
+void Wedge::to_json(nlohmann::json& j) const {
+    j["type"] = "wedge";
+    j["size"] = {size.x, size.y, size.z};
+    j["top_width"] = top_width;
+}
+
+// ── Arb8 ───────────────────────────────────────────────────────
+
+Mesh Arb8::generate_mesh(int) const {
+    Mesh mesh;
+    struct Face { int idx[4]; };
+    Face faces[6] = {
+        {{0, 3, 2, 1}},
+        {{4, 5, 6, 7}},
+        {{0, 1, 5, 4}},
+        {{2, 3, 7, 6}},
+        {{1, 2, 6, 5}},
+        {{0, 4, 7, 3}},
+    };
+    for (auto& f : faces) {
+        Vec3 a = verts[f.idx[0]], b = verts[f.idx[1]];
+        Vec3 c = verts[f.idx[2]], d = verts[f.idx[3]];
+        Vec3 n = (b - a).cross(d - a).normalized();
+        auto base = static_cast<uint32_t>(mesh.vertices.size());
+        mesh.vertices.push_back({a, n});
+        mesh.vertices.push_back({b, n});
+        mesh.vertices.push_back({c, n});
+        mesh.vertices.push_back({d, n});
+        mesh.indices.insert(mesh.indices.end(), {base, base+1, base+2, base, base+2, base+3});
+    }
+    return mesh;
+}
+
+AABB Arb8::local_bounds() const {
+    AABB bb;
+    for (auto& v : verts) bb.expand(v);
+    return bb;
+}
+
+std::unique_ptr<Primitive> Arb8::clone() const {
+    auto p = std::make_unique<Arb8>();
+    for (int i = 0; i < 8; ++i) p->verts[i] = verts[i];
+    return p;
+}
+
+void Arb8::to_json(nlohmann::json& j) const {
+    j["type"] = "arb8";
+    auto& v = j["verts"];
+    v = nlohmann::json::array();
+    for (int i = 0; i < 8; ++i)
+        v.push_back({verts[i].x, verts[i].y, verts[i].z});
 }
 
 }  // namespace smidr
