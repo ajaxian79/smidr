@@ -3,17 +3,17 @@
 
 #include <cstdio>
 #include <imgui.h>
-#include <skald/skald.h>
+#include "gui/ui.h"
 
 namespace smidr {
 
 void draw_properties(App& app) {
-    skald::SectionHeader("Properties");
+    smidr::ui::SectionHeader("Properties");
 
     auto sel = app.document().scene().selected_id();
     if (!sel) {
         ImGui::TextColored(
-            skald::tokens::to_vec4(skald::tokens::ink::dim),
+            smidr::ui::tokens::to_vec4(smidr::ui::tokens::ink::dim),
             "No selection");
         return;
     }
@@ -30,7 +30,7 @@ void draw_properties(App& app) {
     }
 
     ImGui::Dummy(ImVec2(0, 8));
-    skald::SectionHeader("Transform");
+    smidr::ui::SectionHeader("Transform");
 
     bool changed = false;
     ImGui::SetNextItemWidth(-1);
@@ -43,7 +43,7 @@ void draw_properties(App& app) {
     if (changed) app.document().mark_dirty();
 
     ImGui::Dummy(ImVec2(0, 8));
-    skald::SectionHeader("Appearance");
+    smidr::ui::SectionHeader("Appearance");
     ImGui::SetNextItemWidth(-1);
     if (ImGui::ColorEdit3("Color", &node->color.x, ImGuiColorEditFlags_NoInputs))
         app.document().mark_dirty();
@@ -53,10 +53,10 @@ void draw_properties(App& app) {
 
     if (node->primitive) {
         ImGui::Dummy(ImVec2(0, 8));
-        skald::SectionHeader("Primitive");
+        smidr::ui::SectionHeader("Primitive");
 
-        skald::BadgeChip(primitive_type_name(node->primitive->type()),
-                         skald::BadgeTone::Accent);
+        smidr::ui::BadgeChip(primitive_type_name(node->primitive->type()),
+                         smidr::ui::BadgeTone::Accent);
 
         bool prim_changed = false;
 
@@ -104,11 +104,11 @@ void draw_properties(App& app) {
 
     if (node->is_boolean()) {
         ImGui::Dummy(ImVec2(0, 8));
-        skald::SectionHeader("Boolean");
-        skald::BadgeChip(boolean_op_name(node->boolean_op), skald::BadgeTone::Info);
+        smidr::ui::SectionHeader("Boolean");
+        smidr::ui::BadgeChip(boolean_op_name(node->boolean_op), smidr::ui::BadgeTone::Info);
 
         ImGui::TextColored(
-            skald::tokens::to_vec4(skald::tokens::ink::muted),
+            smidr::ui::tokens::to_vec4(smidr::ui::tokens::ink::muted),
             "%zu children", node->children.size());
     }
 
@@ -118,8 +118,8 @@ void draw_properties(App& app) {
         app.document().mark_dirty();
     }
     ImGui::SameLine();
-    skald::BadgeChip(node->visible ? "shown" : "hidden",
-                     node->visible ? skald::BadgeTone::Success : skald::BadgeTone::Muted);
+    smidr::ui::BadgeChip(node->visible ? "shown" : "hidden",
+                     node->visible ? smidr::ui::BadgeTone::Success : smidr::ui::BadgeTone::Muted);
 }
 
 }  // namespace smidr

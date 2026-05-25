@@ -2,7 +2,7 @@
 #include "app/App.h"
 
 #include <imgui.h>
-#include <skald/skald.h>
+#include "gui/ui.h"
 
 namespace smidr {
 
@@ -36,7 +36,7 @@ static void draw_node(App& app, const SceneNode& node) {
 }
 
 void draw_scene_tree(App& app) {
-    skald::SectionHeader("Scene");
+    smidr::ui::SectionHeader("Scene");
 
     auto& scene = app.document().scene();
     for (auto rid : scene.root_ids()) {
@@ -46,7 +46,7 @@ void draw_scene_tree(App& app) {
 
     if (scene.root_ids().empty()) {
         ImGui::TextColored(
-            skald::tokens::to_vec4(skald::tokens::ink::dim),
+            smidr::ui::tokens::to_vec4(smidr::ui::tokens::ink::dim),
             "Empty scene. Add a primitive from the toolbar.");
     }
 }

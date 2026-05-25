@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <stdexcept>
 
-#include <nlohmann/json.hpp>
+#include "io/json.hpp"
 
 namespace smidr {
 

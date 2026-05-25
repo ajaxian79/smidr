@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
-project(smidr
-    VERSION     0.1.0
-    LANGUAGES   CXX
-    DESCRIPTION "Smidr — modern CSG CAD built with ImGui and Skald")
+project(smidr VERSION 0.1.0 LANGUAGES C CXX
+    DESCRIPTION "Smidr — vertically integrated CSG CAD")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,65 +8,100 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(OpenGL REQUIRED)
-find_package(GLEW REQUIRED)
+find_package(X11 QUIET)
 
-# ── GLFW ─────────────────────────────────────────────────────────
-find_package(glfw3 QUIET)
-if(NOT glfw3_FOUND AND NOT TARGET glfw)
-    include(FetchContent)
-    set(GLFW_BUILD_DOCS     OFF CACHE BOOL "" FORCE)
-    set(GLFW_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
-    set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-    set(GLFW_INSTALL        OFF CACHE BOOL "" FORCE)
-    FetchContent_Declare(glfw
-        GIT_REPOSITORY https://github.com/glfw/glfw.git
-        GIT_TAG        3.4
-        GIT_SHALLOW    TRUE)
-    FetchContent_MakeAvailable(glfw)
+# ── Warning suppression for absorbed code ────────────────────
+function(smidr_suppress_warnings target)
+    target_compile_options(${target} PRIVATE
+        $<$<COMPILE_LANG_AND_ID:C,GNU,Clang>:-w>
+        $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-w>)
+endfunction()
+
+# ── GLFW (absorbed, Linux/X11 only) ─────────────────────────
+set(SMIDR_GLFW_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/glfw)
+add_library(smidr_glfw_obj OBJECT
+    ${SMIDR_GLFW_DIR}/src/init.c
+    ${SMIDR_GLFW_DIR}/src/window.c
+    ${SMIDR_GLFW_DIR}/src/monitor.c
+    ${SMIDR_GLFW_DIR}/src/input.c
+    ${SMIDR_GLFW_DIR}/src/context.c
+    ${SMIDR_GLFW_DIR}/src/vulkan.c
+    ${SMIDR_GLFW_DIR}/src/platform.c
+    ${SMIDR_GLFW_DIR}/src/egl_context.c
+    ${SMIDR_GLFW_DIR}/src/osmesa_context.c
+    ${SMIDR_GLFW_DIR}/src/x11_init.c
+    ${SMIDR_GLFW_DIR}/src/x11_monitor.c
+    ${SMIDR_GLFW_DIR}/src/x11_window.c
+    ${SMIDR_GLFW_DIR}/src/xkb_unicode.c
+    ${SMIDR_GLFW_DIR}/src/glx_context.c
+    ${SMIDR_GLFW_DIR}/src/posix_time.c
+    ${SMIDR_GLFW_DIR}/src/posix_thread.c
+    ${SMIDR_GLFW_DIR}/src/posix_module.c
+    ${SMIDR_GLFW_DIR}/src/posix_poll.c
+    ${SMIDR_GLFW_DIR}/src/null_init.c
+    ${SMIDR_GLFW_DIR}/src/null_monitor.c
+    ${SMIDR_GLFW_DIR}/src/null_window.c
+    ${SMIDR_GLFW_DIR}/src/null_joystick.c
+    ${SMIDR_GLFW_DIR}/src/linux_joystick.c)
+target_compile_definitions(smidr_glfw_obj PRIVATE _GLFW_X11)
+target_include_directories(smidr_glfw_obj PRIVATE
+    ${SMIDR_GLFW_DIR}/include
+    ${SMIDR_GLFW_DIR}/src)
+smidr_suppress_warnings(smidr_glfw_obj)
+
+# ── Platform static lib ──────────────────────────────────────
+add_library(smidr_platform STATIC src/platform/Platform.cpp)
+target_sources(smidr_platform PRIVATE $<TARGET_OBJECTS:smidr_glfw_obj>)
+target_include_directories(smidr_platform PUBLIC
+    ${SMIDR_GLFW_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(smidr_platform PUBLIC ${CMAKE_DL_LIBS})
+if(X11_FOUND)
+    target_include_directories(smidr_platform PRIVATE ${X11_INCLUDE_DIR})
+    target_link_libraries(smidr_platform PUBLIC ${X11_LIBRARIES})
+    target_compile_definitions(smidr_platform PUBLIC SMIDR_HAS_X11=1)
 endif()
 
-# ── Skald (brings ImGui with it) ─────────────────────────────────
-# Skald is private; use SSH alias for FetchContent, or a local path
-# override via -DSKALD_SOURCE_DIR=...
-include(FetchContent)
-set(SKALD_BUILD_TEMPLATE OFF CACHE BOOL "" FORCE)
-if(DEFINED SKALD_SOURCE_DIR)
-    add_subdirectory(${SKALD_SOURCE_DIR} ${CMAKE_BINARY_DIR}/skald)
-else()
-    FetchContent_Declare(skald
-        GIT_REPOSITORY git@github-ajaxian79:ajaxian79/skald.git
-        GIT_TAG        main
-        GIT_SHALLOW    TRUE)
-    FetchContent_MakeAvailable(skald)
-endif()
+# ── GLAD (GL 3.2 core loader stub) ──────────────────────────
+add_library(smidr_glad_obj OBJECT src/render/glad/glad.c)
+target_include_directories(smidr_glad_obj PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render)
+smidr_suppress_warnings(smidr_glad_obj)
 
-# ── ImGui backends ───────────────────────────────────────────────
-# imgui_SOURCE_DIR may not be set when skald comes via add_subdirectory;
-# fall back to the FetchContent _deps cache.
-if(NOT imgui_SOURCE_DIR)
-    set(imgui_SOURCE_DIR "${CMAKE_BINARY_DIR}/_deps/imgui-src")
-endif()
-if(NOT TARGET imgui_backends)
-    add_library(imgui_backends STATIC
-        ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
-        ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp)
-    target_include_directories(imgui_backends SYSTEM PUBLIC
-        ${imgui_SOURCE_DIR}/backends)
-    target_link_libraries(imgui_backends PUBLIC imgui glfw OpenGL::GL)
-endif()
+# ── ImGui (absorbed, OBJECT lib) ─────────────────────────────
+set(SMIDR_IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/imgui)
+add_library(smidr_imgui_obj OBJECT
+    ${SMIDR_IMGUI_DIR}/imgui.cpp
+    ${SMIDR_IMGUI_DIR}/imgui_draw.cpp
+    ${SMIDR_IMGUI_DIR}/imgui_tables.cpp
+    ${SMIDR_IMGUI_DIR}/imgui_widgets.cpp
+    ${SMIDR_IMGUI_DIR}/imgui_impl_glfw.cpp
+    ${SMIDR_IMGUI_DIR}/imgui_impl_opengl3.cpp)
+target_include_directories(smidr_imgui_obj PUBLIC
+    ${SMIDR_IMGUI_DIR}
+    ${SMIDR_GLFW_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render)
+# ImGui uses its own built-in GL loader (imgui_impl_opengl3_loader.h).
+# Smidr's render layer uses glad/glad.h (glcorearb.h) in separate TUs.
+smidr_suppress_warnings(smidr_imgui_obj)
 
-# ── stb_image (vendored single-header) ───────────────────────────
-add_library(smidr_stb STATIC src/stb_impl.cpp)
-target_include_directories(smidr_stb PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+# ── GUI (absorbed Skald + ImGui objects) ─────────────────────
+add_library(smidr_gui STATIC
+    src/gui/Theme.cpp
+    src/gui/Widgets.cpp
+    src/gui/Fonts.cpp)
+target_sources(smidr_gui PRIVATE $<TARGET_OBJECTS:smidr_imgui_obj>)
+target_include_directories(smidr_gui PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${SMIDR_IMGUI_DIR})
+target_link_libraries(smidr_gui PUBLIC smidr_platform OpenGL::GL)
 
-# ── nlohmann/json (header-only, for .smidr document format) ──────
-FetchContent_Declare(json
-    GIT_REPOSITORY https://github.com/nlohmann/json.git
-    GIT_TAG        v3.11.3
-    GIT_SHALLOW    TRUE)
-FetchContent_MakeAvailable(json)
+# ── JSON (header-only interface) ─────────────────────────────
+add_library(smidr_json INTERFACE)
+target_include_directories(smidr_json INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/io)
 
-# ── Smidr core library ──────────────────────────────────────────
+# ── Core (geometry kernel) ───────────────────────────────────
 add_library(smidr_core STATIC
     src/core/Primitive.cpp
     src/core/Scene.cpp
@@ -76,19 +109,26 @@ add_library(smidr_core STATIC
     src/core/MeshGenerator.cpp)
 target_include_directories(smidr_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(smidr_core PUBLIC nlohmann_json::nlohmann_json)
+target_link_libraries(smidr_core PUBLIC smidr_json)
 
-# ── Smidr render library ────────────────────────────────────────
+# ── Render ───────────────────────────────────────────────────
 add_library(smidr_render STATIC
     src/render/Shader.cpp
     src/render/Camera.cpp
     src/render/Grid.cpp
     src/render/Renderer.cpp)
+target_sources(smidr_render PRIVATE $<TARGET_OBJECTS:smidr_glad_obj>)
 target_include_directories(smidr_render PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(smidr_render PUBLIC smidr_core OpenGL::GL GLEW::GLEW)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render)
+target_link_libraries(smidr_render PUBLIC smidr_core OpenGL::GL)
 
-# ── Smidr application ───────────────────────────────────────────
+# ── I/O ──────────────────────────────────────────────────────
+add_library(smidr_io STATIC src/io/stb_impl.cpp)
+target_include_directories(smidr_io PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+# ── Executable ───────────────────────────────────────────────
 add_executable(smidr
     src/main.cpp
     src/app/App.cpp
@@ -97,20 +137,15 @@ add_executable(smidr
     src/app/PropertiesPanel.cpp
     src/app/Toolbar.cpp)
 target_link_libraries(smidr PRIVATE
-    smidr_core
-    smidr_render
-    smidr_stb
-    skald::skald
-    imgui_backends
-    glfw
-    OpenGL::GL
-    GLEW::GLEW)
+    smidr_core smidr_render smidr_gui smidr_io smidr_platform
+    OpenGL::GL ${CMAKE_DL_LIBS})
 target_compile_definitions(smidr PRIVATE
-    SMIDR_FONT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fonts")
+    SMIDR_FONT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/src/fonts"
+    SMIDR_ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets")
 target_compile_options(smidr PRIVATE
     $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall -Wextra -Wpedantic>)
 
-# ── Tests ────────────────────────────────────────────────────────
+# ── Tests (no GL deps) ───────────────────────────────────────
 option(SMIDR_BUILD_TESTS "Build tests" ON)
 if(SMIDR_BUILD_TESTS)
     enable_testing()

@@ -10,7 +10,7 @@
 
 struct GLFWwindow;
 
-namespace skald { struct Fonts; }
+namespace smidr::ui { struct Fonts; }
 
 namespace smidr {
 
@@ -22,7 +22,7 @@ struct LogEntry {
 
 class App {
 public:
-    void init(GLFWwindow* win, const skald::Fonts& fonts);
+    void init(GLFWwindow* win, const smidr::ui::Fonts& fonts);
     void update();
     bool wants_quit() const { return quit_; }
 
@@ -49,7 +49,7 @@ private:
     MeshGenerator mesh_gen_;
 
     GLFWwindow*         window_ = nullptr;
-    const skald::Fonts* fonts_  = nullptr;
+    const smidr::ui::Fonts* fonts_  = nullptr;
 
     bool quit_ = false;
     bool meshes_dirty_ = true;

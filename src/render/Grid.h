@@ -1,6 +1,6 @@
 #pragma once
 
-#include "render/GLHeaders.h"
+#include <glad/glad.h>
 #include "render/Shader.h"
 
 namespace smidr {

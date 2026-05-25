@@ -1,13 +1,13 @@
 #include <cstdio>
 #include <string>
 
-#include <GL/glew.h>
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
-#include <skald/skald.h>
+#include "gui/ui.h"
 
 #include "app/App.h"
 #include "app/Viewport.h"
@@ -19,7 +19,7 @@ static void glfw_error(int code, const char* desc) {
     std::fprintf(stderr, "glfw error %d: %s\n", code, desc);
 }
 
-static void draw_titlebar(const skald::Fonts& fonts, smidr::App& app) {
+static void draw_titlebar(const smidr::ui::Fonts& fonts, smidr::App& app) {
     const float h = 44.0f;
     const ImVec2 vp = ImGui::GetIO().DisplaySize;
     ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -34,26 +34,26 @@ static void draw_titlebar(const skald::Fonts& fonts, smidr::App& app) {
     auto* dl = ImGui::GetWindowDrawList();
     dl->AddRectFilledMultiColor(
         ImVec2(0, 0), ImVec2(vp.x, h),
-        skald::tokens::surface::deep, skald::tokens::surface::deep,
-        skald::tokens::surface::window, skald::tokens::surface::window);
+        smidr::ui::tokens::surface::deep, smidr::ui::tokens::surface::deep,
+        smidr::ui::tokens::surface::window, smidr::ui::tokens::surface::window);
 
     if (fonts.sans_md) ImGui::PushFont(fonts.sans_md);
-    dl->AddText(ImVec2(20, 14), skald::tokens::ink::primary, "smidr");
+    dl->AddText(ImVec2(20, 14), smidr::ui::tokens::ink::primary, "smidr");
     if (fonts.sans_md) ImGui::PopFont();
 
     const char* docname = app.document().name().c_str();
     char title[256];
     std::snprintf(title, sizeof title, "/ %s%s", docname,
                   app.document().dirty() ? " *" : "");
-    dl->AddText(ImVec2(80, 16), skald::tokens::ink::muted, title);
+    dl->AddText(ImVec2(80, 16), smidr::ui::tokens::ink::muted, title);
 
     const float right = vp.x - 24.f;
     ImGui::SetCursorScreenPos(ImVec2(right - 120.f, 10.f));
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
-        skald::tokens::to_vec4(skald::tokens::surface::control));
+        smidr::ui::tokens::to_vec4(smidr::ui::tokens::surface::control));
 
-    if (ImGui::Button(skald::icons::kSave, ImVec2(24, 24))) {
+    if (ImGui::Button(smidr::ui::icons::kSave, ImVec2(24, 24))) {
         auto& doc = app.document();
         if (doc.path().empty()) {
             doc.save("untitled.smidr");
@@ -64,9 +64,9 @@ static void draw_titlebar(const skald::Fonts& fonts, smidr::App& app) {
         }
     }
     ImGui::SameLine();
-    ImGui::Button(skald::icons::kSearch, ImVec2(24, 24));
+    ImGui::Button(smidr::ui::icons::kSearch, ImVec2(24, 24));
     ImGui::SameLine();
-    ImGui::Button(skald::icons::kCog, ImVec2(24, 24));
+    ImGui::Button(smidr::ui::icons::kCog, ImVec2(24, 24));
 
     ImGui::PopStyleColor(2);
     ImGui::End();
@@ -75,7 +75,7 @@ static void draw_titlebar(const skald::Fonts& fonts, smidr::App& app) {
 static void draw_workspace_strip(int* workspace, int* document) {
     const float top = 44.f;
     const ImVec2 vp = ImGui::GetIO().DisplaySize;
-    const float h = skald::tokens::sizes::wsbar_h + skald::tokens::sizes::doctab_h;
+    const float h = smidr::ui::tokens::sizes::wsbar_h + smidr::ui::tokens::sizes::doctab_h;
 
     ImGui::SetNextWindowPos(ImVec2(0, top));
     ImGui::SetNextWindowSize(ImVec2(vp.x, h));
@@ -86,25 +86,25 @@ static void draw_workspace_strip(int* workspace, int* document) {
                  ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus);
     ImGui::PopStyleVar();
 
-    static const skald::WorkspaceTab ws[] = {
-        {"model",   "Model",   skald::icons::kLayers},
-        {"inspect", "Inspect", skald::icons::kEye},
-        {"render",  "Render",  skald::icons::kRender},
+    static const smidr::ui::WorkspaceTab ws[] = {
+        {"model",   "Model",   smidr::ui::icons::kLayers},
+        {"inspect", "Inspect", smidr::ui::icons::kEye},
+        {"render",  "Render",  smidr::ui::icons::kRender},
     };
-    skald::WorkspaceTabs(std::span<const skald::WorkspaceTab>(ws, 3), workspace);
+    smidr::ui::WorkspaceTabs(std::span<const smidr::ui::WorkspaceTab>(ws, 3), workspace);
 
-    static skald::DocumentTab docs[] = {
+    static smidr::ui::DocumentTab docs[] = {
         {"Untitled", false},
     };
     int closed = -1;
-    skald::DocumentTabs(std::span<const skald::DocumentTab>(docs, 1), document, &closed);
+    smidr::ui::DocumentTabs(std::span<const smidr::ui::DocumentTab>(docs, 1), document, &closed);
 
     ImGui::End();
 }
 
 static void draw_main_layout(smidr::App& app) {
     auto& io = ImGui::GetIO();
-    const float top = 44.f + skald::tokens::sizes::wsbar_h + skald::tokens::sizes::doctab_h;
+    const float top = 44.f + smidr::ui::tokens::sizes::wsbar_h + smidr::ui::tokens::sizes::doctab_h;
 
     ImGui::SetNextWindowPos(ImVec2(0, top));
     ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y - top));
@@ -125,7 +125,7 @@ static void draw_main_layout(smidr::App& app) {
 
     // Left panel: scene tree
     ImGui::PushStyleColor(ImGuiCol_ChildBg,
-        skald::tokens::to_vec4(skald::tokens::surface::panel));
+        smidr::ui::tokens::to_vec4(smidr::ui::tokens::surface::panel));
     ImGui::BeginChild("##scene_tree", ImVec2(side_w, body_h), ImGuiChildFlags(0),
                       ImGuiWindowFlags_NoScrollbar);
     ImGui::Indent(14);
@@ -147,7 +147,7 @@ static void draw_main_layout(smidr::App& app) {
 
     // Right panel: properties
     ImGui::PushStyleColor(ImGuiCol_ChildBg,
-        skald::tokens::to_vec4(skald::tokens::surface::panel));
+        smidr::ui::tokens::to_vec4(smidr::ui::tokens::surface::panel));
     ImGui::BeginChild("##properties", ImVec2(insp_w, body_h), ImGuiChildFlags(0));
     ImGui::Indent(14);
     ImGui::Dummy(ImVec2(0, 8));
@@ -158,7 +158,7 @@ static void draw_main_layout(smidr::App& app) {
 
     // Bottom: console
     ImGui::PushStyleColor(ImGuiCol_ChildBg,
-        skald::tokens::to_vec4(skald::tokens::surface::panel_alt));
+        smidr::ui::tokens::to_vec4(smidr::ui::tokens::surface::panel_alt));
     ImGui::BeginChild("##console", ImVec2(0, console_h), ImGuiChildFlags(0));
     ImGui::Indent(14);
     ImGui::Dummy(ImVec2(0, 4));
@@ -170,7 +170,7 @@ static void draw_main_layout(smidr::App& app) {
     ImGui::End();
 }
 
-static void draw_splash(const skald::Fonts& fonts) {
+static void draw_splash(const smidr::ui::Fonts& fonts) {
     auto& io = ImGui::GetIO();
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(io.DisplaySize);
@@ -181,20 +181,20 @@ static void draw_splash(const skald::Fonts& fonts) {
                  ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus);
     ImGui::PopStyleVar();
 
-    static const skald::SplashRecent recents[] = {
+    static const smidr::ui::SplashRecent recents[] = {
         {"example_assembly.smidr", "~/projects/smidr/examples", "just now"},
         {"bracket_v2.smidr",       "~/projects/mechanical",     "yesterday"},
         {"housing.smidr",          "~/projects/enclosures",     "last week"},
     };
-    static const skald::SplashAction actions[] = {
+    static const smidr::ui::SplashAction actions[] = {
         {"New document",   "Ctrl+N"},
         {"Open file...",   "Ctrl+O"},
         {"Documentation",  "F1"},
     };
-    skald::Splash("smidr",
+    smidr::ui::Splash("smidr",
                   "craft - model - build",
-                  std::span<const skald::SplashRecent>(recents, 3),
-                  std::span<const skald::SplashAction>(actions, 3),
+                  std::span<const smidr::ui::SplashRecent>(recents, 3),
+                  std::span<const smidr::ui::SplashAction>(actions, 3),
                   0, ImVec2(0, 0), fonts.hero);
     ImGui::End();
 }
@@ -215,24 +215,16 @@ int main(int argc, char** argv) {
     glfwMakeContextCurrent(win);
     glfwSwapInterval(1);
 
-    glewExperimental = GL_TRUE;
-    if (glewInit() != GLEW_OK) {
-        std::fprintf(stderr, "Failed to initialize GLEW\n");
-        glfwDestroyWindow(win);
-        glfwTerminate();
-        return 1;
-    }
-
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     auto& io = ImGui::GetIO();
     io.IniFilename = nullptr;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-    skald::ApplyDefaults(skald::tokens::accents::cyan);
+    smidr::ui::ApplyDefaults(smidr::ui::tokens::accents::cyan);
 
     std::string font_dir = SMIDR_FONT_DIR;
-    skald::Fonts fonts = skald::LoadFonts(io, font_dir.c_str(), 14.f, 13.f, 80.f);
+    smidr::ui::Fonts fonts = smidr::ui::LoadFonts(io, font_dir.c_str(), 14.f, 13.f, 80.f);
 
     ImGui_ImplGlfw_InitForOpenGL(win, true);
     ImGui_ImplOpenGL3_Init("#version 150");
@@ -266,7 +258,7 @@ int main(int argc, char** argv) {
         int dw, dh;
         glfwGetFramebufferSize(win, &dw, &dh);
         glViewport(0, 0, dw, dh);
-        auto bg = skald::tokens::to_vec4(skald::tokens::surface::window);
+        auto bg = smidr::ui::tokens::to_vec4(smidr::ui::tokens::surface::window);
         glClearColor(bg.x, bg.y, bg.z, 1.f);
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

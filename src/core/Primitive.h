@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include <nlohmann/json_fwd.hpp>
+#include "io/json_fwd.hpp"
 
 namespace smidr {
 

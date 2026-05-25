@@ -5,7 +5,7 @@
 
 namespace smidr {
 
-void App::init(GLFWwindow* win, const skald::Fonts& fonts) {
+void App::init(GLFWwindow* win, const smidr::ui::Fonts& fonts) {
     window_ = win;
     fonts_  = &fonts;
     renderer_.init();

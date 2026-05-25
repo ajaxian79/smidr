@@ -2,14 +2,14 @@
 #include "app/App.h"
 
 #include <imgui.h>
-#include <skald/skald.h>
+#include "gui/ui.h"
 
 namespace smidr {
 
 void draw_toolbar(App& app) {
-    skald::BeginToolbar();
+    smidr::ui::BeginToolbar();
 
-    if (skald::IconButton(skald::icons::kPlus, "Add Sphere"))
+    if (smidr::ui::IconButton(smidr::ui::icons::kPlus, "Add Sphere"))
         app.add_primitive(PrimitiveType::Sphere);
     ImGui::SameLine();
 
@@ -29,14 +29,14 @@ void draw_toolbar(App& app) {
         app.add_primitive(PrimitiveType::Torus);
 
     ImGui::SameLine(0, 20);
-    skald::MutedSeparator(0, 0);
+    smidr::ui::MutedSeparator(0, 0);
     ImGui::SameLine(0, 20);
 
-    if (skald::IconButton(skald::icons::kTrash, "Delete"))
+    if (smidr::ui::IconButton(smidr::ui::icons::kTrash, "Delete"))
         app.delete_selected();
 
     ImGui::SameLine(0, 20);
-    skald::MutedSeparator(0, 0);
+    smidr::ui::MutedSeparator(0, 0);
     ImGui::SameLine(0, 20);
 
     if (ImGui::Button("Union"))
@@ -49,16 +49,16 @@ void draw_toolbar(App& app) {
         app.boolean_selected(BooleanOp::Difference);
 
     ImGui::SameLine(0, 20);
-    skald::MutedSeparator(0, 0);
+    smidr::ui::MutedSeparator(0, 0);
     ImGui::SameLine(0, 20);
 
-    skald::PillToggle("Wire", &app.renderer().wireframe);
+    smidr::ui::PillToggle("Wire", &app.renderer().wireframe);
 
-    skald::EndToolbar();
+    smidr::ui::EndToolbar();
 }
 
 void draw_console(App& app) {
-    skald::SectionHeader("Console");
+    smidr::ui::SectionHeader("Console");
 
     ImGui::BeginChild("##console_scroll", ImVec2(0, 0), ImGuiChildFlags(0),
                       ImGuiWindowFlags_HorizontalScrollbar);
@@ -66,11 +66,11 @@ void draw_console(App& app) {
     for (auto& entry : app.log_entries()) {
         ImU32 col;
         switch (entry.level) {
-            case LogEntry::Warning: col = skald::tokens::status::warning; break;
-            case LogEntry::Error:   col = skald::tokens::status::destructive; break;
-            default:                col = skald::tokens::ink::muted; break;
+            case LogEntry::Warning: col = smidr::ui::tokens::status::warning; break;
+            case LogEntry::Error:   col = smidr::ui::tokens::status::destructive; break;
+            default:                col = smidr::ui::tokens::ink::muted; break;
         }
-        ImGui::TextColored(skald::tokens::to_vec4(col), "%s", entry.message.c_str());
+        ImGui::TextColored(smidr::ui::tokens::to_vec4(col), "%s", entry.message.c_str());
     }
 
     if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY())

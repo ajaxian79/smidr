@@ -3,7 +3,7 @@
 #include <cmath>
 #include <stdexcept>
 
-#include <nlohmann/json.hpp>
+#include "io/json.hpp"
 
 namespace smidr {
 

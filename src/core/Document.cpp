@@ -1,7 +1,7 @@
 #include "core/Document.h"
 
 #include <fstream>
-#include <nlohmann/json.hpp>
+#include "io/json.hpp"
 
 namespace smidr {
 
