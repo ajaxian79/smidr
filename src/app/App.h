@@ -25,6 +25,7 @@ public:
     void init(GLFWwindow* win, const smidr::ui::Fonts& fonts);
     void update();
     bool wants_quit() const { return quit_; }
+    void request_quit() { quit_ = true; }
 
     void add_primitive(PrimitiveType type);
     void delete_selected();

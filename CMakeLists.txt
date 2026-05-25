@@ -132,6 +132,11 @@ target_include_directories(smidr_io PUBLIC
 add_executable(smidr
     src/main.cpp
     src/app/App.cpp
+    src/app/Chrome.cpp
+    src/app/TitleBar.cpp
+    src/app/MenuBar.cpp
+    src/app/StatusBar.cpp
+    src/app/Splash.cpp
     src/app/Viewport.cpp
     src/app/SceneTreePanel.cpp
     src/app/PropertiesPanel.cpp
