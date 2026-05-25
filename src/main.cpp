@@ -17,6 +17,7 @@
 #include "app/SceneTreePanel.h"
 #include "app/PropertiesPanel.h"
 #include "app/Toolbar.h"
+#include "app/Console.h"
 
 static void glfw_error(int code, const char* desc) {
     std::fprintf(stderr, "glfw error %d: %s\n", code, desc);
@@ -42,11 +43,12 @@ static void draw_workspace(smidr::App& app, const smidr::ui::Fonts& fonts,
     ImGui::PopStyleVar();
 
     const float side_w = 240.f, insp_w = 280.f;
-    const float body_h = ImGui::GetContentRegionAvail().y;
+    const float console_h = 140.f;
+    const float panels_h = ImGui::GetContentRegionAvail().y - console_h;
 
     ImGui::PushStyleColor(ImGuiCol_ChildBg,
         ui::tokens::to_vec4(ui::tokens::surface::panel));
-    ImGui::BeginChild("##tree", ImVec2(side_w, body_h));
+    ImGui::BeginChild("##tree", ImVec2(side_w, panels_h));
     ImGui::Indent(14); ImGui::Dummy(ImVec2(0, 8));
     draw_scene_tree(app);
     ImGui::Unindent(14);
@@ -54,16 +56,25 @@ static void draw_workspace(smidr::App& app, const smidr::ui::Fonts& fonts,
     ImGui::PopStyleColor();
 
     ImGui::SameLine(0, 1);
-    ImGui::BeginChild("##vp", ImVec2(io.DisplaySize.x - side_w - insp_w - 2, body_h));
+    ImGui::BeginChild("##vp", ImVec2(io.DisplaySize.x - side_w - insp_w - 2, panels_h));
     draw_viewport(app);
     ImGui::EndChild();
 
     ImGui::SameLine(0, 1);
     ImGui::PushStyleColor(ImGuiCol_ChildBg,
         ui::tokens::to_vec4(ui::tokens::surface::panel));
-    ImGui::BeginChild("##props", ImVec2(insp_w, body_h));
+    ImGui::BeginChild("##props", ImVec2(insp_w, panels_h));
     ImGui::Indent(14); ImGui::Dummy(ImVec2(0, 8));
     draw_properties(app);
+    ImGui::Unindent(14);
+    ImGui::EndChild();
+    ImGui::PopStyleColor();
+
+    ImGui::PushStyleColor(ImGuiCol_ChildBg,
+        ui::tokens::to_vec4(ui::tokens::surface::panel_alt));
+    ImGui::BeginChild("##console", ImVec2(0, console_h));
+    ImGui::Indent(14); ImGui::Dummy(ImVec2(0, 4));
+    draw_console(app);
     ImGui::Unindent(14);
     ImGui::EndChild();
     ImGui::PopStyleColor();

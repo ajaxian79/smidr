@@ -2,6 +2,7 @@
 
 #include "core/Math.h"
 #include "core/Primitive.h"
+#include "core/Material.h"
 
 #include <cstdint>
 #include <functional>
@@ -41,6 +42,7 @@ struct SceneNode {
 
     Vec3 color{0.6f, 0.6f, 0.7f};
     float opacity = 1.f;
+    MaterialId material = kDefaultMaterial;
 
     Mat4 local_transform() const;
     Mat4 world_transform(const class Scene& scene) const;

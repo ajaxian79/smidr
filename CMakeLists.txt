@@ -108,7 +108,8 @@ add_library(smidr_core STATIC
     src/core/Document.cpp
     src/core/MeshGenerator.cpp
     src/core/RayCast.cpp
-    src/core/CommandHistory.cpp)
+    src/core/CommandHistory.cpp
+    src/core/Material.cpp)
 target_include_directories(smidr_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(smidr_core PUBLIC smidr_json)
@@ -145,7 +146,8 @@ add_executable(smidr
     src/app/Viewport.cpp
     src/app/SceneTreePanel.cpp
     src/app/PropertiesPanel.cpp
-    src/app/Toolbar.cpp)
+    src/app/Toolbar.cpp
+    src/app/Console.cpp)
 target_link_libraries(smidr PRIVATE
     smidr_core smidr_render smidr_gui smidr_io smidr_platform
     OpenGL::GL ${CMAKE_DL_LIBS})

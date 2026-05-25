@@ -57,26 +57,4 @@ void draw_toolbar(App& app) {
     smidr::ui::EndToolbar();
 }
 
-void draw_console(App& app) {
-    smidr::ui::SectionHeader("Console");
-
-    ImGui::BeginChild("##console_scroll", ImVec2(0, 0), ImGuiChildFlags(0),
-                      ImGuiWindowFlags_HorizontalScrollbar);
-
-    for (auto& entry : app.log_entries()) {
-        ImU32 col;
-        switch (entry.level) {
-            case LogEntry::Warning: col = smidr::ui::tokens::status::warning; break;
-            case LogEntry::Error:   col = smidr::ui::tokens::status::destructive; break;
-            default:                col = smidr::ui::tokens::ink::muted; break;
-        }
-        ImGui::TextColored(smidr::ui::tokens::to_vec4(col), "%s", entry.message.c_str());
-    }
-
-    if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
-        ImGui::SetScrollHereY(1.f);
-
-    ImGui::EndChild();
-}
-
 }  // namespace smidr
