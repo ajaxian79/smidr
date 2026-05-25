@@ -1,6 +1,7 @@
 #include "app/MenuBar.h"
 #include "app/App.h"
 #include "app/Chrome.h"
+#include "io/MeshExport.h"
 #include "gui/ui.h"
 
 #include <imgui.h>
@@ -39,6 +40,21 @@ void draw_menubar(App& app) {
                     doc.save("untitled.smidr");
                 else
                     doc.save(doc.path());
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Export STL...")) {
+                app.mesh_gen().rebuild(app.document().scene());
+                if (export_stl("export.stl", app.mesh_gen()))
+                    app.log(LogEntry::Info, "Exported export.stl");
+                else
+                    app.log(LogEntry::Error, "STL export failed");
+            }
+            if (ImGui::MenuItem("Export OBJ...")) {
+                app.mesh_gen().rebuild(app.document().scene());
+                if (export_obj("export.obj", app.mesh_gen()))
+                    app.log(LogEntry::Info, "Exported export.obj");
+                else
+                    app.log(LogEntry::Error, "OBJ export failed");
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Exit"))

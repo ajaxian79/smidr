@@ -106,7 +106,8 @@ add_library(smidr_core STATIC
     src/core/Primitive.cpp
     src/core/Scene.cpp
     src/core/Document.cpp
-    src/core/MeshGenerator.cpp)
+    src/core/MeshGenerator.cpp
+    src/core/RayCast.cpp)
 target_include_directories(smidr_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(smidr_core PUBLIC smidr_json)
@@ -124,9 +125,12 @@ target_include_directories(smidr_render PUBLIC
 target_link_libraries(smidr_render PUBLIC smidr_core OpenGL::GL)
 
 # ── I/O ──────────────────────────────────────────────────────
-add_library(smidr_io STATIC src/io/stb_impl.cpp)
+add_library(smidr_io STATIC
+    src/io/stb_impl.cpp
+    src/io/MeshExport.cpp)
 target_include_directories(smidr_io PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(smidr_io PUBLIC smidr_core)
 
 # ── Executable ───────────────────────────────────────────────
 add_executable(smidr
