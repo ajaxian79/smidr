@@ -2,6 +2,7 @@
 
 #include "core/Document.h"
 #include "core/MeshGenerator.h"
+#include "core/CommandHistory.h"
 #include "render/Renderer.h"
 #include "render/Camera.h"
 
@@ -30,11 +31,14 @@ public:
     void add_primitive(PrimitiveType type);
     void delete_selected();
     void boolean_selected(BooleanOp op);
+    void undo();
+    void redo();
 
     Document& document() { return doc_; }
     Camera&   camera()   { return camera_; }
     Renderer& renderer() { return renderer_; }
     MeshGenerator& mesh_gen() { return mesh_gen_; }
+    CommandHistory& history() { return history_; }
 
     void log(LogEntry::Level level, const std::string& msg);
     const std::vector<LogEntry>& log_entries() const { return log_; }
@@ -44,10 +48,11 @@ public:
 private:
     void rebuild_meshes();
 
-    Document      doc_;
-    Camera        camera_;
-    Renderer      renderer_;
-    MeshGenerator mesh_gen_;
+    Document       doc_;
+    Camera         camera_;
+    Renderer       renderer_;
+    MeshGenerator  mesh_gen_;
+    CommandHistory history_;
 
     GLFWwindow*         window_ = nullptr;
     const smidr::ui::Fonts* fonts_  = nullptr;

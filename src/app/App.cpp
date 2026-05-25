@@ -1,4 +1,5 @@
 #include "app/App.h"
+#include "core/Commands.h"
 
 #include <cstdio>
 #include <memory>
@@ -10,6 +11,7 @@ void App::init(GLFWwindow* win, const smidr::ui::Fonts& fonts) {
     fonts_  = &fonts;
     renderer_.init();
     doc_.new_document("Untitled");
+    history_.clear();
     log(LogEntry::Info, "smidr v0.1.0 ready");
 }
 
@@ -25,53 +27,23 @@ void App::add_primitive(PrimitiveType type) {
     const char* base_name = "Object";
 
     switch (type) {
-        case PrimitiveType::Sphere:
-            prim = std::make_unique<Sphere>();
-            base_name = "Sphere";
-            break;
-        case PrimitiveType::Box:
-            prim = std::make_unique<Box>();
-            base_name = "Box";
-            break;
-        case PrimitiveType::Cylinder:
-            prim = std::make_unique<Cylinder>();
-            base_name = "Cylinder";
-            break;
-        case PrimitiveType::Cone:
-            prim = std::make_unique<Cone>();
-            base_name = "Cone";
-            break;
-        case PrimitiveType::Torus:
-            prim = std::make_unique<Torus>();
-            base_name = "Torus";
-            break;
-        case PrimitiveType::Ellipsoid:
-            prim = std::make_unique<Ellipsoid>();
-            base_name = "Ellipsoid";
-            break;
-        case PrimitiveType::Halfspace:
-            prim = std::make_unique<Halfspace>();
-            base_name = "Halfspace";
-            break;
-        case PrimitiveType::Pipe:
-            prim = std::make_unique<Pipe>();
-            base_name = "Pipe";
-            break;
-        case PrimitiveType::Wedge:
-            prim = std::make_unique<Wedge>();
-            base_name = "Wedge";
-            break;
-        case PrimitiveType::Arb8:
-            prim = std::make_unique<Arb8>();
-            base_name = "Arb8";
-            break;
+        case PrimitiveType::Sphere:    prim = std::make_unique<Sphere>();    base_name = "Sphere"; break;
+        case PrimitiveType::Box:       prim = std::make_unique<Box>();       base_name = "Box"; break;
+        case PrimitiveType::Cylinder:  prim = std::make_unique<Cylinder>();  base_name = "Cylinder"; break;
+        case PrimitiveType::Cone:      prim = std::make_unique<Cone>();      base_name = "Cone"; break;
+        case PrimitiveType::Torus:     prim = std::make_unique<Torus>();     base_name = "Torus"; break;
+        case PrimitiveType::Ellipsoid: prim = std::make_unique<Ellipsoid>(); base_name = "Ellipsoid"; break;
+        case PrimitiveType::Halfspace: prim = std::make_unique<Halfspace>(); base_name = "Halfspace"; break;
+        case PrimitiveType::Pipe:      prim = std::make_unique<Pipe>();      base_name = "Pipe"; break;
+        case PrimitiveType::Wedge:     prim = std::make_unique<Wedge>();     base_name = "Wedge"; break;
+        case PrimitiveType::Arb8:      prim = std::make_unique<Arb8>();      base_name = "Arb8"; break;
     }
 
     char name[64];
     std::snprintf(name, sizeof name, "%s.%03d", base_name, ++prim_counter_);
 
-    auto id = doc_.scene().add_primitive(name, std::move(prim));
-    doc_.scene().select(id);
+    history_.execute(std::make_unique<AddPrimitiveCommand>(
+        doc_.scene(), name, std::move(prim)));
     doc_.mark_dirty();
     meshes_dirty_ = true;
 
@@ -85,7 +57,7 @@ void App::delete_selected() {
     auto* node = doc_.scene().find(*sel);
     std::string name = node ? node->name : "?";
 
-    doc_.scene().remove_node(*sel);
+    history_.execute(std::make_unique<DeleteNodeCommand>(doc_.scene(), *sel));
     doc_.mark_dirty();
     meshes_dirty_ = true;
     log(LogEntry::Info, "Deleted " + name);
@@ -121,6 +93,22 @@ void App::boolean_selected(BooleanOp op) {
     meshes_dirty_ = true;
 
     log(LogEntry::Info, std::string("Created ") + name);
+}
+
+void App::undo() {
+    if (!history_.can_undo()) return;
+    history_.undo();
+    doc_.mark_dirty();
+    meshes_dirty_ = true;
+    log(LogEntry::Info, "Undo: " + history_.redo_description());
+}
+
+void App::redo() {
+    if (!history_.can_redo()) return;
+    history_.redo();
+    doc_.mark_dirty();
+    meshes_dirty_ = true;
+    log(LogEntry::Info, "Redo: " + history_.undo_description());
 }
 
 void App::rebuild_meshes() {

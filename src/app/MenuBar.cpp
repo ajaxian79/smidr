@@ -62,6 +62,11 @@ void draw_menubar(App& app) {
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Edit")) {
+            if (ImGui::MenuItem("Undo", "Ctrl+Z", false, app.history().can_undo()))
+                app.undo();
+            if (ImGui::MenuItem("Redo", "Ctrl+Y", false, app.history().can_redo()))
+                app.redo();
+            ImGui::Separator();
             if (ImGui::MenuItem("Delete", "Del"))
                 app.delete_selected();
             ImGui::EndMenu();

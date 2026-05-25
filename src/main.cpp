@@ -120,6 +120,12 @@ int main(int, char**) {
                 in_splash = false;
             }
         } else {
+            auto& io = ImGui::GetIO();
+            bool ctrl = io.KeyCtrl || io.KeySuper;
+            if (ctrl && ImGui::IsKeyPressed(ImGuiKey_Z, false)) app.undo();
+            if (ctrl && ImGui::IsKeyPressed(ImGuiKey_Y, false)) app.redo();
+            if (ImGui::IsKeyPressed(ImGuiKey_Delete, false))    app.delete_selected();
+
             app.update();
             draw_workspace(app, fonts, win);
         }
