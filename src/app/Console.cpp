@@ -1,5 +1,7 @@
 #include "app/Console.h"
 #include "app/App.h"
+#include "core/Analysis.h"
+#include "io/MeshExport.h"
 #include "gui/ui.h"
 
 #include <cstring>
@@ -90,6 +92,39 @@ void execute_command(App& app, const std::string& input) {
             app.log(LogEntry::Info, "Loaded " + path);
         else
             app.log(LogEntry::Error, "Load failed: " + path);
+    } else if (verb == "analyze" || verb == "ana") {
+        app.mesh_gen().rebuild(app.document().scene());
+        for (auto& e : app.mesh_gen().entries()) {
+            auto r = analyze_mesh(e.mesh);
+            auto* node = app.document().scene().find(e.node_id);
+            std::string name = node ? node->name : "?";
+            char buf[512];
+            std::snprintf(buf, sizeof buf,
+                "%s: vol=%.4f area=%.4f tris=%d verts=%d centroid=(%.3f,%.3f,%.3f)",
+                name.c_str(), r.volume, r.surface_area, r.triangle_count,
+                r.vertex_count, r.centroid.x, r.centroid.y, r.centroid.z);
+            app.log(LogEntry::Info, buf);
+            std::snprintf(buf, sizeof buf,
+                "  mass=%.4f Ixx=%.4f Iyy=%.4f Izz=%.4f",
+                r.mass, r.Ixx, r.Iyy, r.Izz);
+            app.log(LogEntry::Info, buf);
+        }
+    } else if (verb == "export") {
+        std::string fmt, path;
+        ss >> fmt >> path;
+        if (fmt.empty()) { app.log(LogEntry::Warning, "Usage: export stl|obj <path>"); return; }
+        app.mesh_gen().rebuild(app.document().scene());
+        if (fmt == "stl") {
+            if (path.empty()) path = "export.stl";
+            export_stl(path, app.mesh_gen()) ? app.log(LogEntry::Info, "Exported " + path)
+                                              : app.log(LogEntry::Error, "Export failed");
+        } else if (fmt == "obj") {
+            if (path.empty()) path = "export.obj";
+            export_obj(path, app.mesh_gen()) ? app.log(LogEntry::Info, "Exported " + path)
+                                              : app.log(LogEntry::Error, "Export failed");
+        } else {
+            app.log(LogEntry::Error, "Unknown format: " + fmt);
+        }
     } else if (verb == "clear") {
         app.document().scene().clear();
         app.document().mark_dirty();
