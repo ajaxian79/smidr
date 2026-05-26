@@ -2,6 +2,7 @@
 #include "app/App.h"
 #include "core/Analysis.h"
 #include "io/MeshExport.h"
+#include "io/FormatImport.h"
 #include "render/RayTracer.h"
 #include "gui/ui.h"
 
@@ -126,6 +127,23 @@ void execute_command(App& app, const std::string& input) {
                                               : app.log(LogEntry::Error, "Export failed");
         } else {
             app.log(LogEntry::Error, "Unknown format: " + fmt);
+        }
+    } else if (verb == "import" || verb == "imp") {
+        std::string path;
+        ss >> path;
+        if (path.empty()) { app.log(LogEntry::Warning, "Usage: import <file.stl|obj|ply|off>"); return; }
+        std::string fmt = detect_format(path);
+        bool ok = false;
+        if (fmt == "stl") ok = import_stl(path, app.document().scene());
+        else if (fmt == "obj") ok = import_obj(path, app.document().scene());
+        else if (fmt == "ply") ok = import_ply(path, app.document().scene());
+        else if (fmt == "off") ok = import_off(path, app.document().scene());
+        else { app.log(LogEntry::Error, "Unknown format: " + path); return; }
+        if (ok) {
+            app.document().mark_dirty();
+            app.log(LogEntry::Info, "Imported " + path);
+        } else {
+            app.log(LogEntry::Error, "Import failed: " + path);
         }
     } else if (verb == "rt" || verb == "raytrace") {
         int w = 640, h = 480, spp = 1, depth = 4;

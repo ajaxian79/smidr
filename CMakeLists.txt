@@ -133,7 +133,8 @@ target_link_libraries(smidr_render PUBLIC smidr_core OpenGL::GL)
 # ── I/O ──────────────────────────────────────────────────────
 add_library(smidr_io STATIC
     src/io/stb_impl.cpp
-    src/io/MeshExport.cpp)
+    src/io/MeshExport.cpp
+    src/io/FormatImport.cpp)
 target_include_directories(smidr_io PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(smidr_io PUBLIC smidr_core)
