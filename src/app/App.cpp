@@ -1,5 +1,6 @@
 #include "app/App.h"
 #include "core/Commands.h"
+#include "core/PrimitivesAdvanced.h"
 
 #include <cstdio>
 #include <memory>
@@ -36,7 +37,25 @@ void App::add_primitive(PrimitiveType type) {
         case PrimitiveType::Halfspace: prim = std::make_unique<Halfspace>(); base_name = "Halfspace"; break;
         case PrimitiveType::Pipe:      prim = std::make_unique<Pipe>();      base_name = "Pipe"; break;
         case PrimitiveType::Wedge:     prim = std::make_unique<Wedge>();     base_name = "Wedge"; break;
-        case PrimitiveType::Arb8:      prim = std::make_unique<Arb8>();      base_name = "Arb8"; break;
+        case PrimitiveType::Arb8:           prim = std::make_unique<Arb8>();             base_name = "Arb8"; break;
+        case PrimitiveType::Superellipsoid: prim = std::make_unique<Superellipsoid>();  base_name = "Superellipsoid"; break;
+        case PrimitiveType::Particle:       prim = std::make_unique<Particle>();        base_name = "Particle"; break;
+        case PrimitiveType::Arbn:           prim = std::make_unique<Arbn>();            base_name = "Arbn"; break;
+        case PrimitiveType::RPC:            prim = std::make_unique<RPC>();             base_name = "RPC"; break;
+        case PrimitiveType::RHC:            prim = std::make_unique<RHC>();             base_name = "RHC"; break;
+        case PrimitiveType::EPA:            prim = std::make_unique<EPA>();             base_name = "EPA"; break;
+        case PrimitiveType::EHY:            prim = std::make_unique<EHY>();             base_name = "EHY"; break;
+        case PrimitiveType::ETO:            prim = std::make_unique<ETO>();             base_name = "ETO"; break;
+        case PrimitiveType::Hyperboloid:    prim = std::make_unique<Hyperboloid>();     base_name = "Hyperboloid"; break;
+        case PrimitiveType::Bot:            prim = std::make_unique<Bot>();             base_name = "Bot"; break;
+        case PrimitiveType::Sketch:         prim = std::make_unique<SketchPrimitive>(); base_name = "Sketch"; break;
+        case PrimitiveType::Extrude:        prim = std::make_unique<ExtrudePrimitive>();base_name = "Extrude"; break;
+        case PrimitiveType::Revolve:        prim = std::make_unique<RevolvePrimitive>();base_name = "Revolve"; break;
+        case PrimitiveType::DSP:            prim = std::make_unique<DSPPrimitive>();    base_name = "DSP"; break;
+        case PrimitiveType::Metaball:       prim = std::make_unique<MetaballPrimitive>();base_name = "Metaball"; break;
+        case PrimitiveType::Heart:          prim = std::make_unique<HeartPrimitive>();  base_name = "Heart"; break;
+        case PrimitiveType::PointCloud:     prim = std::make_unique<PointCloudPrimitive>(); base_name = "PointCloud"; break;
+        case PrimitiveType::Annotation:     prim = std::make_unique<AnnotationPrimitive>(); base_name = "Annotation"; break;
     }
 
     char name[64];

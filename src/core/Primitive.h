@@ -34,7 +34,25 @@ enum class PrimitiveType {
     Halfspace,
     Pipe,
     Wedge,
-    Arb8
+    Arb8,
+    Superellipsoid,
+    Particle,
+    Arbn,
+    RPC,
+    RHC,
+    EPA,
+    EHY,
+    ETO,
+    Hyperboloid,
+    Bot,
+    Sketch,
+    Extrude,
+    Revolve,
+    DSP,
+    Metaball,
+    Heart,
+    PointCloud,
+    Annotation,
 };
 
 const char* primitive_type_name(PrimitiveType t);

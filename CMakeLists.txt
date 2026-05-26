@@ -110,7 +110,8 @@ add_library(smidr_core STATIC
     src/core/RayCast.cpp
     src/core/CommandHistory.cpp
     src/core/Material.cpp
-    src/core/CSGEval.cpp)
+    src/core/CSGEval.cpp
+    src/core/PrimitivesAdvanced.cpp)
 target_include_directories(smidr_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(smidr_core PUBLIC smidr_json)

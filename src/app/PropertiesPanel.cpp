@@ -139,6 +139,12 @@ void draw_properties(App& app) {
                 }
                 break;
             }
+            default:
+                ImGui::TextColored(
+                    smidr::ui::tokens::to_vec4(smidr::ui::tokens::ink::dim),
+                    "(%s — use console for params)",
+                    primitive_type_name(node->primitive->type()));
+                break;
         }
 
         if (prim_changed) app.document().mark_dirty();

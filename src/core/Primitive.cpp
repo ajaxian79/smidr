@@ -1,4 +1,5 @@
 #include "core/Primitive.h"
+#include "core/PrimitivesAdvanced.h"
 
 #include <cmath>
 #include <stdexcept>
@@ -24,22 +25,58 @@ const char* primitive_type_name(PrimitiveType t) {
         case PrimitiveType::Halfspace: return "halfspace";
         case PrimitiveType::Pipe:      return "pipe";
         case PrimitiveType::Wedge:     return "wedge";
-        case PrimitiveType::Arb8:      return "arb8";
+        case PrimitiveType::Arb8:           return "arb8";
+        case PrimitiveType::Superellipsoid: return "superellipsoid";
+        case PrimitiveType::Particle:       return "particle";
+        case PrimitiveType::Arbn:           return "arbn";
+        case PrimitiveType::RPC:            return "rpc";
+        case PrimitiveType::RHC:            return "rhc";
+        case PrimitiveType::EPA:            return "epa";
+        case PrimitiveType::EHY:            return "ehy";
+        case PrimitiveType::ETO:            return "eto";
+        case PrimitiveType::Hyperboloid:    return "hyperboloid";
+        case PrimitiveType::Bot:            return "bot";
+        case PrimitiveType::Sketch:         return "sketch";
+        case PrimitiveType::Extrude:        return "extrude";
+        case PrimitiveType::Revolve:        return "revolve";
+        case PrimitiveType::DSP:            return "dsp";
+        case PrimitiveType::Metaball:       return "metaball";
+        case PrimitiveType::Heart:          return "heart";
+        case PrimitiveType::PointCloud:     return "pointcloud";
+        case PrimitiveType::Annotation:     return "annotation";
     }
     return "unknown";
 }
 
 PrimitiveType primitive_type_from_name(const std::string& name) {
-    if (name == "sphere")    return PrimitiveType::Sphere;
-    if (name == "box")       return PrimitiveType::Box;
-    if (name == "cylinder")  return PrimitiveType::Cylinder;
-    if (name == "cone")      return PrimitiveType::Cone;
-    if (name == "torus")     return PrimitiveType::Torus;
-    if (name == "ellipsoid") return PrimitiveType::Ellipsoid;
-    if (name == "halfspace") return PrimitiveType::Halfspace;
-    if (name == "pipe")      return PrimitiveType::Pipe;
-    if (name == "wedge")     return PrimitiveType::Wedge;
-    if (name == "arb8")      return PrimitiveType::Arb8;
+    if (name == "sphere")         return PrimitiveType::Sphere;
+    if (name == "box")            return PrimitiveType::Box;
+    if (name == "cylinder")       return PrimitiveType::Cylinder;
+    if (name == "cone")           return PrimitiveType::Cone;
+    if (name == "torus")          return PrimitiveType::Torus;
+    if (name == "ellipsoid")      return PrimitiveType::Ellipsoid;
+    if (name == "halfspace")      return PrimitiveType::Halfspace;
+    if (name == "pipe")           return PrimitiveType::Pipe;
+    if (name == "wedge")          return PrimitiveType::Wedge;
+    if (name == "arb8")           return PrimitiveType::Arb8;
+    if (name == "superellipsoid") return PrimitiveType::Superellipsoid;
+    if (name == "particle")       return PrimitiveType::Particle;
+    if (name == "arbn")           return PrimitiveType::Arbn;
+    if (name == "rpc")            return PrimitiveType::RPC;
+    if (name == "rhc")            return PrimitiveType::RHC;
+    if (name == "epa")            return PrimitiveType::EPA;
+    if (name == "ehy")            return PrimitiveType::EHY;
+    if (name == "eto")            return PrimitiveType::ETO;
+    if (name == "hyperboloid")    return PrimitiveType::Hyperboloid;
+    if (name == "bot")            return PrimitiveType::Bot;
+    if (name == "sketch")         return PrimitiveType::Sketch;
+    if (name == "extrude")        return PrimitiveType::Extrude;
+    if (name == "revolve")        return PrimitiveType::Revolve;
+    if (name == "dsp")            return PrimitiveType::DSP;
+    if (name == "metaball")       return PrimitiveType::Metaball;
+    if (name == "heart")          return PrimitiveType::Heart;
+    if (name == "pointcloud")     return PrimitiveType::PointCloud;
+    if (name == "annotation")     return PrimitiveType::Annotation;
     throw std::runtime_error("Unknown primitive type: " + name);
 }
 
@@ -117,6 +154,24 @@ std::unique_ptr<Primitive> Primitive::from_json(const nlohmann::json& j) {
             }
             return p;
         }
+        case PrimitiveType::Superellipsoid: return std::make_unique<Superellipsoid>();
+        case PrimitiveType::Particle:       return std::make_unique<Particle>();
+        case PrimitiveType::Arbn:           return std::make_unique<Arbn>();
+        case PrimitiveType::RPC:            return std::make_unique<RPC>();
+        case PrimitiveType::RHC:            return std::make_unique<RHC>();
+        case PrimitiveType::EPA:            return std::make_unique<EPA>();
+        case PrimitiveType::EHY:            return std::make_unique<EHY>();
+        case PrimitiveType::ETO:            return std::make_unique<ETO>();
+        case PrimitiveType::Hyperboloid:    return std::make_unique<Hyperboloid>();
+        case PrimitiveType::Bot:            return std::make_unique<Bot>();
+        case PrimitiveType::Sketch:         return std::make_unique<SketchPrimitive>();
+        case PrimitiveType::Extrude:        return std::make_unique<ExtrudePrimitive>();
+        case PrimitiveType::Revolve:        return std::make_unique<RevolvePrimitive>();
+        case PrimitiveType::DSP:            return std::make_unique<DSPPrimitive>();
+        case PrimitiveType::Metaball:       return std::make_unique<MetaballPrimitive>();
+        case PrimitiveType::Heart:          return std::make_unique<HeartPrimitive>();
+        case PrimitiveType::PointCloud:     return std::make_unique<PointCloudPrimitive>();
+        case PrimitiveType::Annotation:     return std::make_unique<AnnotationPrimitive>();
     }
     return nullptr;
 }
