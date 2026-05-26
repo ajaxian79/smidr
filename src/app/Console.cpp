@@ -176,6 +176,122 @@ void execute_command(App& app, const std::string& input) {
         } else {
             app.log(LogEntry::Error, "Could not write " + path);
         }
+    } else if (verb == "dup" || verb == "cp" || verb == "copy") {
+        auto sel = app.document().scene().selected_id();
+        if (!sel) { app.log(LogEntry::Warning, "Nothing selected"); return; }
+        auto* node = app.document().scene().find(*sel);
+        if (!node || !node->primitive) { app.log(LogEntry::Warning, "Cannot duplicate"); return; }
+        auto clone = node->primitive->clone();
+        std::string name = node->name + "_copy";
+        auto id = app.document().scene().add_primitive(name, std::move(clone));
+        auto* newn = app.document().scene().find(id);
+        if (newn) { newn->position = node->position + Vec3{0.5f, 0, 0}; newn->color = node->color; }
+        app.document().scene().select(id);
+        app.document().mark_dirty();
+        app.log(LogEntry::Info, "Duplicated → " + name);
+    } else if (verb == "rename" || verb == "mv") {
+        std::string new_name;
+        ss >> new_name;
+        auto sel = app.document().scene().selected_id();
+        if (!sel) { app.log(LogEntry::Warning, "Nothing selected"); return; }
+        if (new_name.empty()) { app.log(LogEntry::Warning, "Usage: rename <name>"); return; }
+        auto* n = app.document().scene().find(*sel);
+        if (n) { n->name = new_name; app.document().mark_dirty(); app.log(LogEntry::Info, "Renamed to " + new_name); }
+    } else if (verb == "color") {
+        float r = 0.6f, g = 0.6f, b = 0.7f;
+        ss >> r >> g >> b;
+        auto sel = app.document().scene().selected_id();
+        if (!sel) { app.log(LogEntry::Warning, "Nothing selected"); return; }
+        auto* n = app.document().scene().find(*sel);
+        if (n) { n->color = {r, g, b}; app.document().mark_dirty(); }
+    } else if (verb == "rot" || verb == "rotate") {
+        auto sel = app.document().scene().selected_id();
+        if (!sel) { app.log(LogEntry::Warning, "Nothing selected"); return; }
+        auto* n = app.document().scene().find(*sel);
+        if (!n) return;
+        float rx = 0, ry = 0, rz = 0;
+        ss >> rx >> ry >> rz;
+        n->rotation = Vec3{rx, ry, rz};
+        app.document().mark_dirty();
+    } else if (verb == "hide") {
+        auto sel = app.document().scene().selected_id();
+        if (!sel) return;
+        auto* n = app.document().scene().find(*sel);
+        if (n) { n->visible = false; app.document().mark_dirty(); app.log(LogEntry::Info, "Hidden " + n->name); }
+    } else if (verb == "show" || verb == "unhide") {
+        auto sel = app.document().scene().selected_id();
+        if (!sel) return;
+        auto* n = app.document().scene().find(*sel);
+        if (n) { n->visible = true; app.document().mark_dirty(); app.log(LogEntry::Info, "Shown " + n->name); }
+    } else if (verb == "showall") {
+        app.document().scene().for_each([](const SceneNode&) {});
+        for (auto rid : app.document().scene().root_ids()) {
+            auto* n = app.document().scene().find(rid);
+            if (n) n->visible = true;
+        }
+        app.document().mark_dirty();
+        app.log(LogEntry::Info, "All objects shown");
+    } else if (verb == "bb" || verb == "bounds") {
+        auto sel = app.document().scene().selected_id();
+        if (!sel) { app.log(LogEntry::Warning, "Nothing selected"); return; }
+        auto* n = app.document().scene().find(*sel);
+        if (!n || !n->primitive) return;
+        auto bb = n->primitive->local_bounds();
+        char buf[256];
+        std::snprintf(buf, sizeof buf, "AABB: (%.3f,%.3f,%.3f) → (%.3f,%.3f,%.3f) size=(%.3f,%.3f,%.3f)",
+            bb.min_pt.x, bb.min_pt.y, bb.min_pt.z, bb.max_pt.x, bb.max_pt.y, bb.max_pt.z,
+            bb.max_pt.x-bb.min_pt.x, bb.max_pt.y-bb.min_pt.y, bb.max_pt.z-bb.min_pt.z);
+        app.log(LogEntry::Info, buf);
+    } else if (verb == "group" || verb == "g") {
+        std::string name = "Group";
+        ss >> name;
+        auto id = app.document().scene().add_group(name);
+        app.document().scene().select(id);
+        app.document().mark_dirty();
+        app.log(LogEntry::Info, "Created group " + name);
+    } else if (verb == "union" || verb == "u") {
+        app.boolean_selected(BooleanOp::Union);
+    } else if (verb == "subtract" || verb == "sub" || verb == "diff") {
+        app.boolean_selected(BooleanOp::Difference);
+    } else if (verb == "intersect" || verb == "int") {
+        app.boolean_selected(BooleanOp::Intersection);
+    } else if (verb == "frame" || verb == "f") {
+        AABB bb;
+        app.document().scene().for_each([&](const SceneNode& n) {
+            if (n.primitive) bb.merge(n.primitive->local_bounds());
+        });
+        app.camera().frame(bb);
+    } else if (verb == "top") {
+        app.camera().yaw = 0; app.camera().pitch = 89.f;
+    } else if (verb == "front") {
+        app.camera().yaw = 0; app.camera().pitch = 0;
+    } else if (verb == "side" || verb == "right") {
+        app.camera().yaw = 90; app.camera().pitch = 0;
+    } else if (verb == "reset_view" || verb == "ae") {
+        app.camera().yaw = 45; app.camera().pitch = 30; app.camera().distance = 8;
+        app.camera().target = {0,0,0};
+    } else if (verb == "zoom") {
+        float z = 1.f; ss >> z;
+        app.camera().distance /= z;
+    } else if (verb == "shaders") {
+        app.log(LogEntry::Info, "Available shaders: plastic flat cook_torrance checker noise wood camo toon cloud mirror glass emission");
+    } else if (verb == "info") {
+        auto sel = app.document().scene().selected_id();
+        if (!sel) { app.log(LogEntry::Warning, "Nothing selected"); return; }
+        auto* n = app.document().scene().find(*sel);
+        if (!n) return;
+        char buf[512];
+        std::snprintf(buf, sizeof buf, "[%u] %s type=%s pos=(%.2f,%.2f,%.2f) rot=(%.1f,%.1f,%.1f) scale=(%.2f,%.2f,%.2f) visible=%s",
+            n->id, n->name.c_str(), n->primitive ? primitive_type_name(n->primitive->type()) : "group",
+            n->position.x, n->position.y, n->position.z,
+            n->rotation.x, n->rotation.y, n->rotation.z,
+            n->scale_vec.x, n->scale_vec.y, n->scale_vec.z,
+            n->visible ? "yes" : "no");
+        app.log(LogEntry::Info, buf);
+    } else if (verb == "count") {
+        int count = 0;
+        app.document().scene().for_each([&](const SceneNode&) { ++count; });
+        app.log(LogEntry::Info, "Objects: " + std::to_string(count));
     } else if (verb == "clear") {
         app.document().scene().clear();
         app.document().mark_dirty();
