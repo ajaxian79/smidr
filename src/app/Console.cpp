@@ -2,9 +2,11 @@
 #include "app/App.h"
 #include "core/Analysis.h"
 #include "io/MeshExport.h"
+#include "render/RayTracer.h"
 #include "gui/ui.h"
 
 #include <cstring>
+#include <fstream>
 #include <sstream>
 #include <imgui.h>
 
@@ -124,6 +126,37 @@ void execute_command(App& app, const std::string& input) {
                                               : app.log(LogEntry::Error, "Export failed");
         } else {
             app.log(LogEntry::Error, "Unknown format: " + fmt);
+        }
+    } else if (verb == "rt" || verb == "raytrace") {
+        int w = 640, h = 480, spp = 1, depth = 4;
+        std::string path = "render.ppm";
+        ss >> w >> h >> spp;
+        if (w < 1) w = 640;
+        if (h < 1) h = 480;
+        if (spp < 1) spp = 1;
+
+        app.mesh_gen().rebuild(app.document().scene());
+        MaterialLibrary mats;
+        RayTracer tracer;
+        tracer.build_scene(app.mesh_gen(), mats);
+
+        RayTraceSettings settings;
+        settings.width = w; settings.height = h;
+        settings.samples_per_pixel = spp;
+        settings.max_depth = depth;
+
+        app.log(LogEntry::Info, "Ray tracing " + std::to_string(w) + "x" + std::to_string(h)
+                + " spp=" + std::to_string(spp) + "...");
+        auto pixels = tracer.render(app.camera(), settings);
+
+        std::ofstream ppm(path, std::ios::binary);
+        if (ppm.is_open()) {
+            ppm << "P6\n" << w << " " << h << "\n255\n";
+            ppm.write(reinterpret_cast<const char*>(pixels.data()),
+                      static_cast<std::streamsize>(pixels.size()));
+            app.log(LogEntry::Info, "Rendered to " + path);
+        } else {
+            app.log(LogEntry::Error, "Could not write " + path);
         }
     } else if (verb == "clear") {
         app.document().scene().clear();
