@@ -80,6 +80,87 @@ private:
     std::unique_ptr<Primitive> saved_prim_;
 };
 
+class ColorCommand : public Command {
+public:
+    ColorCommand(Scene& scene, NodeId id, Vec3 new_color)
+        : scene_(scene), id_(id), new_color_(new_color) {
+        auto* n = scene_.find(id_);
+        if (n) old_color_ = n->color;
+    }
+    void execute() override {
+        auto* n = scene_.find(id_); if (n) n->color = new_color_;
+    }
+    void undo() override {
+        auto* n = scene_.find(id_); if (n) n->color = old_color_;
+    }
+    std::string description() const override { return "Color"; }
+private:
+    Scene& scene_; NodeId id_;
+    Vec3 new_color_, old_color_;
+};
+
+class RenameCommand : public Command {
+public:
+    RenameCommand(Scene& scene, NodeId id, std::string new_name)
+        : scene_(scene), id_(id), new_name_(std::move(new_name)) {
+        auto* n = scene_.find(id_);
+        if (n) old_name_ = n->name;
+    }
+    void execute() override {
+        auto* n = scene_.find(id_); if (n) n->name = new_name_;
+    }
+    void undo() override {
+        auto* n = scene_.find(id_); if (n) n->name = old_name_;
+    }
+    std::string description() const override { return "Rename"; }
+private:
+    Scene& scene_; NodeId id_;
+    std::string new_name_, old_name_;
+};
+
+class VisibilityCommand : public Command {
+public:
+    VisibilityCommand(Scene& scene, NodeId id, bool visible)
+        : scene_(scene), id_(id), new_vis_(visible) {
+        auto* n = scene_.find(id_);
+        if (n) old_vis_ = n->visible;
+    }
+    void execute() override {
+        auto* n = scene_.find(id_); if (n) n->visible = new_vis_;
+    }
+    void undo() override {
+        auto* n = scene_.find(id_); if (n) n->visible = old_vis_;
+    }
+    std::string description() const override { return "Toggle Visibility"; }
+private:
+    Scene& scene_; NodeId id_;
+    bool new_vis_, old_vis_ = true;
+};
+
+class ReparentCommand : public Command {
+public:
+    ReparentCommand(Scene& scene, NodeId child, NodeId new_parent)
+        : scene_(scene), child_(child), new_parent_(new_parent) {
+        auto* n = scene_.find(child_);
+        if (n) old_parent_ = n->parent;
+    }
+    void execute() override { scene_.reparent(child_, new_parent_); }
+    void undo() override { scene_.reparent(child_, old_parent_); }
+    std::string description() const override { return "Reparent"; }
+private:
+    Scene& scene_;
+    NodeId child_, new_parent_, old_parent_ = kInvalidNode;
+};
+
+class MacroCommand : public Command {
+public:
+    std::vector<std::unique_ptr<Command>> commands;
+    std::string macro_name = "Macro";
+    void execute() override { for (auto& c : commands) c->execute(); }
+    void undo() override { for (auto it = commands.rbegin(); it != commands.rend(); ++it) (*it)->undo(); }
+    std::string description() const override { return macro_name; }
+};
+
 class TransformCommand : public Command {
 public:
     TransformCommand(Scene& scene, NodeId id,
