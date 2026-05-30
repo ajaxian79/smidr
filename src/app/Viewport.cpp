@@ -71,9 +71,13 @@ void draw_viewport(App& app) {
 
             auto hit = ray_cast(ray, app.mesh_gen());
             if (hit) {
-                app.document().scene().select(hit->node_id);
+                if (io.KeyShift) {
+                    app.document().scene().toggle_selection(hit->node_id);
+                } else {
+                    app.document().scene().select(hit->node_id);
+                }
                 app.document().mark_dirty();
-            } else {
+            } else if (!io.KeyShift) {
                 app.document().scene().clear_selection();
             }
         }

@@ -227,6 +227,28 @@ std::optional<NodeId> Scene::selected_id() const {
     return std::nullopt;
 }
 
+void Scene::add_to_selection(NodeId id) {
+    auto* n = find(id);
+    if (n) n->selected = true;
+}
+
+void Scene::toggle_selection(NodeId id) {
+    auto* n = find(id);
+    if (n) n->selected = !n->selected;
+}
+
+std::vector<NodeId> Scene::selected_ids() const {
+    std::vector<NodeId> out;
+    for (auto& n : nodes_) if (n.selected) out.push_back(n.id);
+    return out;
+}
+
+int Scene::selection_count() const {
+    int c = 0;
+    for (auto& n : nodes_) if (n.selected) ++c;
+    return c;
+}
+
 void Scene::for_each(std::function<void(const SceneNode&)> fn) const {
     for (auto& n : nodes_) fn(n);
 }

@@ -611,6 +611,53 @@ void CommandRegistry::install_default_commands() {
             }
         }, {"keyframe"}});
 
+    r.register_command({"select_all", "select_all", "Select all visible",
+        [](App& app, std::istringstream&) {
+            app.document().scene().for_each([&](const SceneNode& n) {
+                if (n.visible)
+                    const_cast<SceneNode&>(n).selected = true;
+            });
+            app.document().mark_dirty();
+        }, {"sel_all"}});
+
+    r.register_command({"select_none", "select_none", "Deselect all",
+        [](App& app, std::istringstream&) {
+            app.document().scene().clear_selection();
+            app.document().mark_dirty();
+        }, {"deselect"}});
+
+    r.register_command({"invert_sel", "invert_sel", "Invert selection",
+        [](App& app, std::istringstream&) {
+            app.document().scene().for_each([&](const SceneNode& n) {
+                const_cast<SceneNode&>(n).selected = !n.selected;
+            });
+            app.document().mark_dirty();
+        }, {}});
+
+    r.register_command({"sel_by_type", "sel_by_type <type>", "Select by primitive type",
+        [](App& app, std::istringstream& ss) {
+            std::string type; ss >> type;
+            app.document().scene().clear_selection();
+            app.document().scene().for_each([&](const SceneNode& n) {
+                if (n.primitive && primitive_type_name(n.primitive->type()) == type)
+                    const_cast<SceneNode&>(n).selected = true;
+            });
+            app.document().mark_dirty();
+        }, {}});
+
+    r.register_command({"isolate", "isolate", "Hide everything except selection",
+        [](App& app, std::istringstream&) {
+            app.document().scene().for_each([&](const SceneNode& n) {
+                const_cast<SceneNode&>(n).visible = n.selected;
+            });
+            app.document().mark_dirty();
+        }, {}});
+
+    r.register_command({"sel_count", "sel_count", "Number selected",
+        [](App& app, std::istringstream&) {
+            app.log(LogEntry::Info, std::to_string(app.document().scene().selection_count()) + " selected");
+        }, {}});
+
     r.register_command({"script", "script <code>", "Run inline script",
         [](App& app, std::istringstream& ss) {
             std::string code;

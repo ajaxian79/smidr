@@ -75,8 +75,12 @@ public:
     const SceneNode* find(NodeId id) const;
 
     void select(NodeId id);
+    void add_to_selection(NodeId id);
+    void toggle_selection(NodeId id);
     void clear_selection();
     std::optional<NodeId> selected_id() const;
+    std::vector<NodeId> selected_ids() const;
+    int selection_count() const;
 
     const std::vector<NodeId>& root_ids() const { return root_ids_; }
     const std::vector<SceneNode>& nodes() const { return nodes_; }
