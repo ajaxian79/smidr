@@ -3,6 +3,7 @@
 #include "app/Gizmo.h"
 #include "app/LightsAndAnim.h"
 #include "app/ScriptEngine.h"
+#include "app/AssetLibrary.h"
 #include "core/Analysis.h"
 #include "core/PrimitivesAdvanced.h"
 #include "core/PrimitivesExtra.h"
@@ -659,6 +660,42 @@ void CommandRegistry::install_default_commands() {
         [](App& app, std::istringstream&) {
             app.log(LogEntry::Info, std::to_string(app.document().scene().selection_count()) + " selected");
         }, {}});
+
+    r.register_command({"asset", "asset list|spawn <name>", "Asset library",
+        [](App& app, std::istringstream& ss) {
+            std::string sub; ss >> sub;
+            auto& lib = AssetLibrary::instance();
+            if (sub == "list" || sub.empty()) {
+                for (auto& p : lib.primitives())
+                    app.log(LogEntry::Info, "  [" + p.category + "] " + p.name);
+                for (auto& s : lib.scenes())
+                    app.log(LogEntry::Info, "  [Scene] " + s.name);
+            } else if (sub == "spawn") {
+                std::string nm;
+                std::getline(ss, nm);
+                if (!nm.empty() && nm[0] == ' ') nm.erase(0, 1);
+                for (auto& p : lib.primitives()) {
+                    if (p.name == nm) {
+                        auto prim = p.factory();
+                        if (prim) {
+                            auto id = app.document().scene().add_primitive(nm, std::move(prim));
+                            app.document().scene().select(id);
+                            app.document().mark_dirty();
+                            app.log(LogEntry::Info, "Spawned " + nm);
+                        }
+                        return;
+                    }
+                }
+                for (auto& s : lib.scenes()) {
+                    if (s.name == nm) {
+                        s.install(app);
+                        app.document().mark_dirty();
+                        return;
+                    }
+                }
+                app.log(LogEntry::Error, "Asset not found: " + nm);
+            }
+        }, {"library"}});
 
     r.register_command({"script", "script <code>", "Run inline script",
         [](App& app, std::istringstream& ss) {
