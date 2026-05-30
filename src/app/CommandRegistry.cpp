@@ -5,6 +5,7 @@
 #include "core/Analysis.h"
 #include "core/PrimitivesAdvanced.h"
 #include "core/PrimitivesExtra.h"
+#include "core/MeshOps.h"
 #include "io/MeshExport.h"
 #include "io/FormatImport.h"
 #include "render/RayTracer.h"
@@ -608,6 +609,127 @@ void CommandRegistry::install_default_commands() {
                 app.log(LogEntry::Info, buf);
             }
         }, {"keyframe"}});
+
+    r.register_command({"stats", "stats", "Detailed mesh stats for selected",
+        [](App& app, std::istringstream&) {
+            auto sel = app.document().scene().selected_id();
+            if (!sel) return;
+            app.mesh_gen().rebuild(app.document().scene());
+            for (auto& e : app.mesh_gen().entries()) {
+                if (e.node_id != *sel) continue;
+                auto s = compute_mesh_stats(e.mesh);
+                char buf[512];
+                std::snprintf(buf, sizeof buf,
+                    "V=%d E=%d F=%d boundary=%d non-manifold=%d area=%.3f vol=%.3f genus=%d",
+                    s.vertex_count, s.edge_count, s.triangle_count,
+                    s.boundary_edge_count, s.non_manifold_edge_count,
+                    s.total_area, s.total_volume, s.genus_estimate);
+                app.log(LogEntry::Info, buf);
+            }
+        }, {}});
+
+    r.register_command({"weld", "weld [tol]", "Weld nearby vertices",
+        [](App& app, std::istringstream& ss) {
+            auto sel = app.document().scene().selected_id();
+            if (!sel) return;
+            auto* n = app.document().scene().find(*sel);
+            if (!n || !n->primitive || n->primitive->type() != PrimitiveType::Bot) {
+                app.log(LogEntry::Warning, "Select a Bot primitive");
+                return;
+            }
+            float tol = 1e-4f; ss >> tol;
+            auto* bot = static_cast<Bot*>(n->primitive.get());
+            Mesh m = bot->generate_mesh();
+            Mesh welded = weld_vertices(m, tol);
+            bot->bot_vertices.clear();
+            bot->bot_faces.clear();
+            for (auto& v : welded.vertices) bot->bot_vertices.push_back(v.position);
+            bot->bot_faces = welded.indices;
+            app.document().mark_dirty();
+            app.log(LogEntry::Info, "Welded to " + std::to_string(welded.vertices.size()) + " vertices");
+        }, {}});
+
+    r.register_command({"smooth", "smooth [iter] [strength]", "Laplacian smooth",
+        [](App& app, std::istringstream& ss) {
+            auto sel = app.document().scene().selected_id();
+            if (!sel) return;
+            auto* n = app.document().scene().find(*sel);
+            if (!n || !n->primitive || n->primitive->type() != PrimitiveType::Bot) return;
+            int it = 5; float st = 0.5f;
+            ss >> it >> st;
+            auto* bot = static_cast<Bot*>(n->primitive.get());
+            Mesh m = bot->generate_mesh();
+            Mesh sm = laplacian_smooth(m, it, st);
+            bot->bot_vertices.clear();
+            bot->bot_faces.clear();
+            for (auto& v : sm.vertices) bot->bot_vertices.push_back(v.position);
+            bot->bot_faces = sm.indices;
+            app.document().mark_dirty();
+            app.log(LogEntry::Info, "Smoothed " + std::to_string(it) + " iters");
+        }, {}});
+
+    r.register_command({"subdiv", "subdiv", "Loop subdivision",
+        [](App& app, std::istringstream&) {
+            auto sel = app.document().scene().selected_id();
+            if (!sel) return;
+            auto* n = app.document().scene().find(*sel);
+            if (!n || !n->primitive || n->primitive->type() != PrimitiveType::Bot) return;
+            auto* bot = static_cast<Bot*>(n->primitive.get());
+            Mesh m = bot->generate_mesh();
+            Mesh sub = subdivide_loop(m);
+            bot->bot_vertices.clear();
+            bot->bot_faces.clear();
+            for (auto& v : sub.vertices) bot->bot_vertices.push_back(v.position);
+            bot->bot_faces = sub.indices;
+            app.document().mark_dirty();
+            app.log(LogEntry::Info, "Subdivided to " + std::to_string(sub.indices.size()/3) + " tris");
+        }, {}});
+
+    r.register_command({"decimate", "decimate [ratio]", "Decimate mesh",
+        [](App& app, std::istringstream& ss) {
+            auto sel = app.document().scene().selected_id();
+            if (!sel) return;
+            auto* n = app.document().scene().find(*sel);
+            if (!n || !n->primitive || n->primitive->type() != PrimitiveType::Bot) return;
+            float ratio = 0.5f; ss >> ratio;
+            auto* bot = static_cast<Bot*>(n->primitive.get());
+            Mesh m = bot->generate_mesh();
+            Mesh dec = simplify_decimate(m, ratio);
+            bot->bot_vertices.clear();
+            bot->bot_faces.clear();
+            for (auto& v : dec.vertices) bot->bot_vertices.push_back(v.position);
+            bot->bot_faces = dec.indices;
+            app.document().mark_dirty();
+            app.log(LogEntry::Info, "Decimated to " + std::to_string(dec.indices.size()/3) + " tris");
+        }, {"simplify"}});
+
+    r.register_command({"fill_holes", "fill_holes", "Fill boundary holes",
+        [](App& app, std::istringstream&) {
+            auto sel = app.document().scene().selected_id();
+            if (!sel) return;
+            auto* n = app.document().scene().find(*sel);
+            if (!n || !n->primitive || n->primitive->type() != PrimitiveType::Bot) return;
+            auto* bot = static_cast<Bot*>(n->primitive.get());
+            Mesh m = bot->generate_mesh();
+            Mesh filled = fill_holes(m);
+            bot->bot_vertices.clear();
+            bot->bot_faces.clear();
+            for (auto& v : filled.vertices) bot->bot_vertices.push_back(v.position);
+            bot->bot_faces = filled.indices;
+            app.document().mark_dirty();
+            app.log(LogEntry::Info, "Filled holes");
+        }, {"heal"}});
+
+    r.register_command({"watertight", "watertight", "Check if mesh is watertight",
+        [](App& app, std::istringstream&) {
+            auto sel = app.document().scene().selected_id();
+            if (!sel) return;
+            app.mesh_gen().rebuild(app.document().scene());
+            for (auto& e : app.mesh_gen().entries()) {
+                if (e.node_id != *sel) continue;
+                app.log(LogEntry::Info, is_watertight(e.mesh) ? "watertight" : "open");
+            }
+        }, {}});
 
     r.register_command({"play", "play", "Start timeline",
         [](App&, std::istringstream&) { app_timeline().play(); }, {}});
