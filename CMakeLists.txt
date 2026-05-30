@@ -124,7 +124,9 @@ add_library(smidr_core STATIC
     src/core/SDF.cpp
     src/core/AnimCurves.cpp
     src/core/Slicer.cpp
-    src/core/GCode.cpp)
+    src/core/GCode.cpp
+    src/core/Curvature.cpp
+    src/core/BezierCurve.cpp)
 target_include_directories(smidr_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(smidr_core PUBLIC smidr_json)
