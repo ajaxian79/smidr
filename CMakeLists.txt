@@ -133,7 +133,8 @@ add_library(smidr_render STATIC
     src/render/Grid.cpp
     src/render/Renderer.cpp
     src/render/RayTracer.cpp
-    src/render/Shaders.cpp)
+    src/render/Shaders.cpp
+    src/render/ShadersExtra.cpp)
 target_sources(smidr_render PRIVATE $<TARGET_OBJECTS:smidr_glad_obj>)
 target_include_directories(smidr_render PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
