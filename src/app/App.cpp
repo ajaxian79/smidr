@@ -1,4 +1,5 @@
 #include "app/App.h"
+#include "app/CommandRegistry.h"
 #include "core/Commands.h"
 #include "core/PrimitivesAdvanced.h"
 
@@ -13,7 +14,13 @@ void App::init(GLFWwindow* win, const smidr::ui::Fonts& fonts) {
     renderer_.init();
     doc_.new_document("Untitled");
     history_.clear();
-    log(LogEntry::Info, "smidr v0.1.0 ready");
+    static bool commands_installed = false;
+    if (!commands_installed) {
+        CommandRegistry::install_default_commands();
+        commands_installed = true;
+    }
+    log(LogEntry::Info, "smidr v0.1.0 ready (" +
+        std::to_string(CommandRegistry::instance().list().size()) + " commands)");
 }
 
 void App::update() {
