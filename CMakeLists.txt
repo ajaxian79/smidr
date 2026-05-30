@@ -137,7 +137,9 @@ add_library(smidr_core STATIC
     src/core/SoftBody.cpp
     src/core/Fracture.cpp
     src/core/GDT.cpp
-    src/core/Sketch2D.cpp)
+    src/core/Sketch2D.cpp
+    src/core/SPH.cpp
+    src/core/Reconstruct.cpp)
 target_include_directories(smidr_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(smidr_core PUBLIC smidr_json)
