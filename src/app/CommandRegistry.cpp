@@ -12,6 +12,7 @@
 #include "core/GCode.h"
 #include "io/MeshExport.h"
 #include "io/FormatImport.h"
+#include "io/Screenshot.h"
 #include "render/RayTracer.h"
 
 #include <algorithm>
@@ -662,6 +663,19 @@ void CommandRegistry::install_default_commands() {
         [](App& app, std::istringstream&) {
             app.log(LogEntry::Info, std::to_string(app.document().scene().selection_count()) + " selected");
         }, {}});
+
+    r.register_command({"screenshot", "screenshot [path] [w] [h]",
+        "Render and save framebuffer to PNG",
+        [](App& app, std::istringstream& ss) {
+            std::string p = "screenshot.png";
+            int w = app.renderer().width(), h = app.renderer().height();
+            ss >> p >> w >> h;
+            if (capture_framebuffer(p, w, h)) {
+                app.log(LogEntry::Info, "Saved " + p);
+            } else {
+                app.log(LogEntry::Error, "Screenshot failed");
+            }
+        }, {"capture", "snap"}});
 
     r.register_command({"slice", "slice <step> [out.dxf]", "Slice mesh to DXF",
         [](App& app, std::istringstream& ss) {
