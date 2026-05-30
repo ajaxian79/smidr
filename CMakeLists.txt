@@ -114,7 +114,9 @@ add_library(smidr_core STATIC
     src/core/PrimitivesAdvanced.cpp
     src/core/Analysis.cpp
     src/core/NURBS.cpp
-    src/core/NMG.cpp)
+    src/core/NMG.cpp
+    src/core/Constraints.cpp
+    src/core/BREPIntersect.cpp)
 target_include_directories(smidr_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(smidr_core PUBLIC smidr_json)
