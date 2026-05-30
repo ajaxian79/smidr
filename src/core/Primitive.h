@@ -53,6 +53,16 @@ enum class PrimitiveType {
     Heart,
     PointCloud,
     Annotation,
+    CLine,
+    Joint,
+    Grip,
+    Datum,
+    Submodel,
+    Script,
+    EBM,
+    VOL,
+    HF,
+    ARS,
 };
 
 const char* primitive_type_name(PrimitiveType t);

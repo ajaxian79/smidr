@@ -2,6 +2,7 @@
 #include "app/App.h"
 #include "core/Analysis.h"
 #include "core/PrimitivesAdvanced.h"
+#include "core/PrimitivesExtra.h"
 #include "io/MeshExport.h"
 #include "io/FormatImport.h"
 #include "render/RayTracer.h"
@@ -77,6 +78,16 @@ static std::unique_ptr<Primitive> make_primitive(const std::string& name) {
     if (name == "heart")          return std::make_unique<HeartPrimitive>();
     if (name == "pointcloud")     return std::make_unique<PointCloudPrimitive>();
     if (name == "annotation")     return std::make_unique<AnnotationPrimitive>();
+    if (name == "cline")          return std::make_unique<CLinePrimitive>();
+    if (name == "joint")          return std::make_unique<JointPrimitive>();
+    if (name == "grip")           return std::make_unique<GripPrimitive>();
+    if (name == "datum")          return std::make_unique<DatumPrimitive>();
+    if (name == "submodel")       return std::make_unique<SubmodelPrimitive>();
+    if (name == "script")         return std::make_unique<ScriptPrimitive>();
+    if (name == "ebm")            return std::make_unique<EBMPrimitive>();
+    if (name == "vol")            return std::make_unique<VOLPrimitive>();
+    if (name == "hf")             return std::make_unique<HFPrimitive>();
+    if (name == "ars")            return std::make_unique<ARSPrimitive>();
     return nullptr;
 }
 

@@ -2,6 +2,7 @@
 #include "app/CommandRegistry.h"
 #include "core/Commands.h"
 #include "core/PrimitivesAdvanced.h"
+#include "core/PrimitivesExtra.h"
 
 #include <cstdio>
 #include <memory>
@@ -63,6 +64,16 @@ void App::add_primitive(PrimitiveType type) {
         case PrimitiveType::Heart:          prim = std::make_unique<HeartPrimitive>();  base_name = "Heart"; break;
         case PrimitiveType::PointCloud:     prim = std::make_unique<PointCloudPrimitive>(); base_name = "PointCloud"; break;
         case PrimitiveType::Annotation:     prim = std::make_unique<AnnotationPrimitive>(); base_name = "Annotation"; break;
+        case PrimitiveType::CLine:          prim = std::make_unique<CLinePrimitive>();    base_name = "CLine"; break;
+        case PrimitiveType::Joint:          prim = std::make_unique<JointPrimitive>();    base_name = "Joint"; break;
+        case PrimitiveType::Grip:           prim = std::make_unique<GripPrimitive>();     base_name = "Grip"; break;
+        case PrimitiveType::Datum:          prim = std::make_unique<DatumPrimitive>();    base_name = "Datum"; break;
+        case PrimitiveType::Submodel:       prim = std::make_unique<SubmodelPrimitive>(); base_name = "Submodel"; break;
+        case PrimitiveType::Script:         prim = std::make_unique<ScriptPrimitive>();   base_name = "Script"; break;
+        case PrimitiveType::EBM:            prim = std::make_unique<EBMPrimitive>();      base_name = "EBM"; break;
+        case PrimitiveType::VOL:            prim = std::make_unique<VOLPrimitive>();      base_name = "VOL"; break;
+        case PrimitiveType::HF:             prim = std::make_unique<HFPrimitive>();       base_name = "HF"; break;
+        case PrimitiveType::ARS:            prim = std::make_unique<ARSPrimitive>();      base_name = "ARS"; break;
     }
 
     char name[64];

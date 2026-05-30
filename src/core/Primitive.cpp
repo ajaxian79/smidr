@@ -1,5 +1,6 @@
 #include "core/Primitive.h"
 #include "core/PrimitivesAdvanced.h"
+#include "core/PrimitivesExtra.h"
 
 #include <cmath>
 #include <stdexcept>
@@ -44,6 +45,16 @@ const char* primitive_type_name(PrimitiveType t) {
         case PrimitiveType::Heart:          return "heart";
         case PrimitiveType::PointCloud:     return "pointcloud";
         case PrimitiveType::Annotation:     return "annotation";
+        case PrimitiveType::CLine:          return "cline";
+        case PrimitiveType::Joint:          return "joint";
+        case PrimitiveType::Grip:           return "grip";
+        case PrimitiveType::Datum:          return "datum";
+        case PrimitiveType::Submodel:       return "submodel";
+        case PrimitiveType::Script:         return "script";
+        case PrimitiveType::EBM:            return "ebm";
+        case PrimitiveType::VOL:            return "vol";
+        case PrimitiveType::HF:             return "hf";
+        case PrimitiveType::ARS:            return "ars";
     }
     return "unknown";
 }
@@ -77,6 +88,16 @@ PrimitiveType primitive_type_from_name(const std::string& name) {
     if (name == "heart")          return PrimitiveType::Heart;
     if (name == "pointcloud")     return PrimitiveType::PointCloud;
     if (name == "annotation")     return PrimitiveType::Annotation;
+    if (name == "cline")          return PrimitiveType::CLine;
+    if (name == "joint")          return PrimitiveType::Joint;
+    if (name == "grip")           return PrimitiveType::Grip;
+    if (name == "datum")          return PrimitiveType::Datum;
+    if (name == "submodel")       return PrimitiveType::Submodel;
+    if (name == "script")         return PrimitiveType::Script;
+    if (name == "ebm")            return PrimitiveType::EBM;
+    if (name == "vol")            return PrimitiveType::VOL;
+    if (name == "hf")             return PrimitiveType::HF;
+    if (name == "ars")            return PrimitiveType::ARS;
     throw std::runtime_error("Unknown primitive type: " + name);
 }
 
@@ -172,6 +193,16 @@ std::unique_ptr<Primitive> Primitive::from_json(const nlohmann::json& j) {
         case PrimitiveType::Heart:          return std::make_unique<HeartPrimitive>();
         case PrimitiveType::PointCloud:     return std::make_unique<PointCloudPrimitive>();
         case PrimitiveType::Annotation:     return std::make_unique<AnnotationPrimitive>();
+        case PrimitiveType::CLine:          return std::make_unique<CLinePrimitive>();
+        case PrimitiveType::Joint:          return std::make_unique<JointPrimitive>();
+        case PrimitiveType::Grip:           return std::make_unique<GripPrimitive>();
+        case PrimitiveType::Datum:          return std::make_unique<DatumPrimitive>();
+        case PrimitiveType::Submodel:       return std::make_unique<SubmodelPrimitive>();
+        case PrimitiveType::Script:         return std::make_unique<ScriptPrimitive>();
+        case PrimitiveType::EBM:            return std::make_unique<EBMPrimitive>();
+        case PrimitiveType::VOL:            return std::make_unique<VOLPrimitive>();
+        case PrimitiveType::HF:             return std::make_unique<HFPrimitive>();
+        case PrimitiveType::ARS:            return std::make_unique<ARSPrimitive>();
     }
     return nullptr;
 }
