@@ -15,6 +15,11 @@ std::string detect_format(const std::filesystem::path& path) {
     if (ext == ".obj") return "obj";
     if (ext == ".ply") return "ply";
     if (ext == ".off") return "off";
+    if (ext == ".dxf") return "dxf";
+    if (ext == ".wrl" || ext == ".vrml") return "vrml";
+    if (ext == ".gltf") return "gltf";
+    if (ext == ".x3d") return "x3d";
+    if (ext == ".iges" || ext == ".igs") return "iges";
     return "";
 }
 

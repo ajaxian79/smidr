@@ -117,27 +117,32 @@ void execute_command(App& app, const std::string& input) {
         ss >> fmt >> path;
         if (fmt.empty()) { app.log(LogEntry::Warning, "Usage: export stl|obj <path>"); return; }
         app.mesh_gen().rebuild(app.document().scene());
-        if (fmt == "stl") {
-            if (path.empty()) path = "export.stl";
-            export_stl(path, app.mesh_gen()) ? app.log(LogEntry::Info, "Exported " + path)
-                                              : app.log(LogEntry::Error, "Export failed");
-        } else if (fmt == "obj") {
-            if (path.empty()) path = "export.obj";
-            export_obj(path, app.mesh_gen()) ? app.log(LogEntry::Info, "Exported " + path)
-                                              : app.log(LogEntry::Error, "Export failed");
-        } else {
-            app.log(LogEntry::Error, "Unknown format: " + fmt);
-        }
+        if (path.empty()) path = "export." + fmt;
+        bool ok = false;
+        if (fmt == "stl")  ok = export_stl(path, app.mesh_gen());
+        else if (fmt == "obj")  ok = export_obj(path, app.mesh_gen());
+        else if (fmt == "ply")  ok = export_ply(path, app.mesh_gen());
+        else if (fmt == "off")  ok = export_off(path, app.mesh_gen());
+        else if (fmt == "dxf")  ok = export_dxf(path, app.mesh_gen());
+        else if (fmt == "vrml" || fmt == "wrl") ok = export_vrml(path, app.mesh_gen());
+        else if (fmt == "x3d")  ok = export_x3d(path, app.mesh_gen());
+        else if (fmt == "gltf") ok = export_gltf(path, app.mesh_gen());
+        else if (fmt == "iges" || fmt == "igs") ok = export_iges(path, app.mesh_gen());
+        else { app.log(LogEntry::Error, "Unknown format: " + fmt); return; }
+        ok ? app.log(LogEntry::Info, "Exported " + path)
+            : app.log(LogEntry::Error, "Export failed");
     } else if (verb == "import" || verb == "imp") {
         std::string path;
         ss >> path;
-        if (path.empty()) { app.log(LogEntry::Warning, "Usage: import <file.stl|obj|ply|off>"); return; }
+        if (path.empty()) { app.log(LogEntry::Warning, "Usage: import <file.stl|obj|ply|off|dxf|vrml>"); return; }
         std::string fmt = detect_format(path);
         bool ok = false;
         if (fmt == "stl") ok = import_stl(path, app.document().scene());
         else if (fmt == "obj") ok = import_obj(path, app.document().scene());
         else if (fmt == "ply") ok = import_ply(path, app.document().scene());
         else if (fmt == "off") ok = import_off(path, app.document().scene());
+        else if (fmt == "dxf") ok = import_dxf(path, app.document().scene());
+        else if (fmt == "vrml") ok = import_vrml(path, app.document().scene());
         else { app.log(LogEntry::Error, "Unknown format: " + path); return; }
         if (ok) {
             app.document().mark_dirty();
