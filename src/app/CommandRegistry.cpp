@@ -1,6 +1,7 @@
 #include "app/CommandRegistry.h"
 #include "app/App.h"
 #include "app/Gizmo.h"
+#include "app/LightsAndAnim.h"
 #include "core/Analysis.h"
 #include "core/PrimitivesAdvanced.h"
 #include "core/PrimitivesExtra.h"
@@ -558,6 +559,62 @@ void CommandRegistry::install_default_commands() {
             app.camera().yaw=45; app.camera().pitch=30; app.camera().distance=8;
             app.camera().target = {0,0,0};
         }, {"reset_view"}});
+
+    r.register_command({"light", "light add|list|clear",
+        "Manage scene lights",
+        [](App& app, std::istringstream& ss) {
+            std::string sub; ss >> sub;
+            auto& mgr = app_lights();
+            if (sub == "add") {
+                SceneLight l;
+                l.name = "Light." + std::to_string(mgr.lights().size());
+                ss >> l.position.x >> l.position.y >> l.position.z;
+                mgr.add(l);
+                app.log(LogEntry::Info, "Added " + l.name);
+            } else if (sub == "clear") {
+                mgr.clear();
+                app.log(LogEntry::Info, "Lights cleared");
+            } else {
+                for (auto& l : mgr.lights()) {
+                    char buf[256];
+                    std::snprintf(buf, sizeof buf, "  %s @(%.1f,%.1f,%.1f) I=%.2f %s",
+                                  l.name.c_str(), l.position.x, l.position.y, l.position.z,
+                                  l.intensity, l.enabled ? "ON" : "OFF");
+                    app.log(LogEntry::Info, buf);
+                }
+            }
+        }, {}});
+
+    r.register_command({"key", "key add|list|clear",
+        "Animation keyframes",
+        [](App& app, std::istringstream& ss) {
+            std::string sub; ss >> sub;
+            auto& tl = app_timeline();
+            if (sub == "add") {
+                auto sel = app.document().scene().selected_id();
+                if (!sel) return;
+                auto* n = app.document().scene().find(*sel);
+                if (n) {
+                    tl.add_keyframe(n->id, tl.current_time, n->position, n->rotation, n->scale_vec);
+                    app.log(LogEntry::Info, "Keyframe at t=" + std::to_string(tl.current_time));
+                }
+            } else if (sub == "clear") {
+                tl.tracks.clear();
+            } else {
+                char buf[128];
+                std::snprintf(buf, sizeof buf, "%zu tracks, t=%.2f/%.2f, fps=%.1f, %s",
+                              tl.tracks.size(), tl.current_time, tl.duration, tl.fps,
+                              tl.playing ? "PLAYING" : "STOPPED");
+                app.log(LogEntry::Info, buf);
+            }
+        }, {"keyframe"}});
+
+    r.register_command({"play", "play", "Start timeline",
+        [](App&, std::istringstream&) { app_timeline().play(); }, {}});
+    r.register_command({"pause", "pause", "Pause timeline",
+        [](App&, std::istringstream&) { app_timeline().pause(); }, {}});
+    r.register_command({"stop", "stop", "Stop timeline",
+        [](App&, std::istringstream&) { app_timeline().stop(); }, {}});
 
     r.register_command({"gizmo", "gizmo translate|rotate|scale|off",
         "Set gizmo mode",

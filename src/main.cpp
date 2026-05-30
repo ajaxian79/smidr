@@ -18,6 +18,7 @@
 #include "app/PropertiesPanel.h"
 #include "app/Toolbar.h"
 #include "app/Console.h"
+#include "app/LightsAndAnim.h"
 
 static void glfw_error(int code, const char* desc) {
     std::fprintf(stderr, "glfw error %d: %s\n", code, desc);
@@ -136,6 +137,10 @@ int main(int, char**) {
             if (ctrl && ImGui::IsKeyPressed(ImGuiKey_Z, false)) app.undo();
             if (ctrl && ImGui::IsKeyPressed(ImGuiKey_Y, false)) app.redo();
             if (ImGui::IsKeyPressed(ImGuiKey_Delete, false))    app.delete_selected();
+
+            auto& tl = smidr::app_timeline();
+            tl.advance(io.DeltaTime);
+            if (tl.playing) tl.apply_to_scene(app);
 
             app.update();
             draw_workspace(app, fonts, win);

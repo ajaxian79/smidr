@@ -165,7 +165,8 @@ add_executable(smidr
     src/app/Toolbar.cpp
     src/app/Console.cpp
     src/app/CommandRegistry.cpp
-    src/app/Gizmo.cpp)
+    src/app/Gizmo.cpp
+    src/app/LightsAndAnim.cpp)
 target_link_libraries(smidr PRIVATE
     smidr_core smidr_render smidr_gui smidr_io smidr_platform
     OpenGL::GL ${CMAKE_DL_LIBS})
