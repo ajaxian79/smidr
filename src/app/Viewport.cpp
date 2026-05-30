@@ -1,8 +1,13 @@
 #include "app/Viewport.h"
 #include "app/App.h"
+#include "app/Gizmo.h"
 #include "core/RayCast.h"
 
 #include <imgui.h>
+
+namespace smidr {
+GizmoState& app_gizmo_state();
+}
 
 namespace smidr {
 
@@ -31,6 +36,8 @@ void draw_viewport(App& app) {
     if (ImGui::IsItemHovered()) {
         auto& io = ImGui::GetIO();
         auto& cam = app.camera();
+        float mx = io.MousePos.x - cursor_pos.x;
+        float my = io.MousePos.y - cursor_pos.y;
 
         if (io.MouseWheel != 0.f)
             cam.zoom(io.MouseWheel);
@@ -45,10 +52,14 @@ void draw_viewport(App& app) {
         if (ImGui::IsMouseDragging(ImGuiMouseButton_Right))
             cam.pan(io.MouseDelta.x, io.MouseDelta.y);
 
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) &&
+        bool gizmo_used = handle_gizmo_interaction(
+            app, app_gizmo_state(), mx, my,
+            static_cast<float>(vw), static_cast<float>(vh),
+            ImGui::IsMouseDown(ImGuiMouseButton_Left),
+            ImGui::IsMouseClicked(ImGuiMouseButton_Left));
+
+        if (!gizmo_used && ImGui::IsMouseClicked(ImGuiMouseButton_Left) &&
             !ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-            float mx = io.MousePos.x - cursor_pos.x;
-            float my = io.MousePos.y - cursor_pos.y;
             float aspect = static_cast<float>(vw) / static_cast<float>(vh);
             Mat4 view = cam.view_matrix();
             Mat4 proj = cam.projection_matrix(aspect);
@@ -67,6 +78,10 @@ void draw_viewport(App& app) {
             }
         }
     }
+
+    draw_gizmo(app, app_gizmo_state(),
+               cursor_pos.x, cursor_pos.y,
+               static_cast<float>(vw), static_cast<float>(vh));
 
     ImGui::EndChild();
 }

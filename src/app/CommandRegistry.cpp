@@ -1,5 +1,6 @@
 #include "app/CommandRegistry.h"
 #include "app/App.h"
+#include "app/Gizmo.h"
 #include "core/Analysis.h"
 #include "core/PrimitivesAdvanced.h"
 #include "core/PrimitivesExtra.h"
@@ -557,6 +558,106 @@ void CommandRegistry::install_default_commands() {
             app.camera().yaw=45; app.camera().pitch=30; app.camera().distance=8;
             app.camera().target = {0,0,0};
         }, {"reset_view"}});
+
+    r.register_command({"gizmo", "gizmo translate|rotate|scale|off",
+        "Set gizmo mode",
+        [](App& app, std::istringstream& ss) {
+            std::string m; ss >> m;
+            auto& g = app_gizmo_state();
+            if (m == "translate" || m == "t") g.mode = GizmoMode::Translate;
+            else if (m == "rotate" || m == "r") g.mode = GizmoMode::Rotate;
+            else if (m == "scale" || m == "s") g.mode = GizmoMode::Scale;
+            else g.mode = GizmoMode::None;
+            app.log(LogEntry::Info, "Gizmo: " + m);
+        }, {"giz"}});
+
+    r.register_command({"measure_d", "measure_d <id1> <id2>",
+        "Distance between two object centers",
+        [](App& app, std::istringstream& ss) {
+            unsigned int a, b;
+            if (!(ss >> a >> b)) {
+                app.log(LogEntry::Warning, "Usage: measure_d <id1> <id2>");
+                return;
+            }
+            auto* na = app.document().scene().find(a);
+            auto* nb = app.document().scene().find(b);
+            if (!na || !nb) { app.log(LogEntry::Error, "Object(s) not found"); return; }
+            Vec3 d = nb->position - na->position;
+            float dist = d.length();
+            char buf[256];
+            std::snprintf(buf, sizeof buf, "Distance %u→%u: %.4f (dx=%.3f dy=%.3f dz=%.3f)",
+                          a, b, dist, d.x, d.y, d.z);
+            app.log(LogEntry::Info, buf);
+        }, {"dist"}});
+
+    r.register_command({"measure_a", "measure_a <id1> <id2> <id3>",
+        "Angle between three points (at id2)",
+        [](App& app, std::istringstream& ss) {
+            unsigned int a, b, c;
+            if (!(ss >> a >> b >> c)) return;
+            auto* na = app.document().scene().find(a);
+            auto* nb = app.document().scene().find(b);
+            auto* nc = app.document().scene().find(c);
+            if (!na || !nb || !nc) return;
+            Vec3 ab = (na->position - nb->position).normalized();
+            Vec3 cb = (nc->position - nb->position).normalized();
+            float dot = ab.dot(cb);
+            dot = std::max(-1.f, std::min(1.f, dot));
+            float ang_rad = std::acos(dot);
+            float ang_deg = ang_rad * 180.f / kPi;
+            char buf[128];
+            std::snprintf(buf, sizeof buf, "Angle at %u: %.3f° (%.4f rad)", b, ang_deg, ang_rad);
+            app.log(LogEntry::Info, buf);
+        }, {"ang"}});
+
+    r.register_command({"snap", "snap <grid|off> [size]",
+        "Toggle grid snapping",
+        [](App& app, std::istringstream& ss) {
+            std::string m; float sz = 0.25f;
+            ss >> m >> sz;
+            app.log(LogEntry::Info, "Snap: " + m + " size=" + std::to_string(sz));
+        }, {}});
+
+    r.register_command({"vol", "vol", "Total volume of all objects",
+        [](App& app, std::istringstream&) {
+            app.mesh_gen().rebuild(app.document().scene());
+            float total = 0.f;
+            for (auto& e : app.mesh_gen().entries()) {
+                auto rr = analyze_mesh(e.mesh);
+                total += rr.volume;
+            }
+            char buf[64];
+            std::snprintf(buf, sizeof buf, "Total volume: %.4f", total);
+            app.log(LogEntry::Info, buf);
+        }, {}});
+
+    r.register_command({"area", "area", "Total surface area",
+        [](App& app, std::istringstream&) {
+            app.mesh_gen().rebuild(app.document().scene());
+            float total = 0.f;
+            for (auto& e : app.mesh_gen().entries()) {
+                auto rr = analyze_mesh(e.mesh);
+                total += rr.surface_area;
+            }
+            char buf[64];
+            std::snprintf(buf, sizeof buf, "Total surface area: %.4f", total);
+            app.log(LogEntry::Info, buf);
+        }, {}});
+
+    r.register_command({"cm", "cm", "Center of mass of selected",
+        [](App& app, std::istringstream&) {
+            auto sel = app.document().scene().selected_id();
+            if (!sel) return;
+            app.mesh_gen().rebuild(app.document().scene());
+            for (auto& e : app.mesh_gen().entries()) {
+                if (e.node_id != *sel) continue;
+                auto rr = analyze_mesh(e.mesh);
+                char buf[128];
+                std::snprintf(buf, sizeof buf, "CM: (%.3f, %.3f, %.3f)",
+                              rr.centroid.x, rr.centroid.y, rr.centroid.z);
+                app.log(LogEntry::Info, buf);
+            }
+        }, {"centroid"}});
 
     r.register_command({"help", "help", "Show available commands",
         [](App& app, std::istringstream&) {
