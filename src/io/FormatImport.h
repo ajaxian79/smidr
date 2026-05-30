@@ -14,6 +14,8 @@ bool import_ply(const std::filesystem::path& path, Scene& scene);
 bool import_off(const std::filesystem::path& path, Scene& scene);
 bool import_dxf(const std::filesystem::path& path, Scene& scene);
 bool import_vrml(const std::filesystem::path& path, Scene& scene);
+bool import_step(const std::filesystem::path& path, Scene& scene);
+bool import_iges(const std::filesystem::path& path, Scene& scene);
 
 std::string detect_format(const std::filesystem::path& path);
 

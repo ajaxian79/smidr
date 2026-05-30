@@ -422,6 +422,8 @@ void CommandRegistry::install_default_commands() {
             else if (fmt=="off") ok=import_off(p,app.document().scene());
             else if (fmt=="dxf") ok=import_dxf(p,app.document().scene());
             else if (fmt=="vrml") ok=import_vrml(p,app.document().scene());
+            else if (fmt=="step") ok=import_step(p,app.document().scene());
+            else if (fmt=="iges") ok=import_iges(p,app.document().scene());
             ok ? (app.document().mark_dirty(), app.log(LogEntry::Info, "Imported " + p))
                 : app.log(LogEntry::Error, "Import failed: " + p);
         }, {"imp"}});

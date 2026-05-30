@@ -20,6 +20,7 @@ std::string detect_format(const std::filesystem::path& path) {
     if (ext == ".gltf") return "gltf";
     if (ext == ".x3d") return "x3d";
     if (ext == ".iges" || ext == ".igs") return "iges";
+    if (ext == ".step" || ext == ".stp") return "step";
     return "";
 }
 
