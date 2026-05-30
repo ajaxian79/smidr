@@ -37,4 +37,6 @@ private:
     std::vector<std::shared_ptr<CommandInfo>> all_;
 };
 
+void install_ged_commands();
+
 }  // namespace smidr
