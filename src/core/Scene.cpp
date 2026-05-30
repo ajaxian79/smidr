@@ -249,6 +249,59 @@ int Scene::selection_count() const {
     return c;
 }
 
+void Scene::reparent(NodeId child, NodeId new_parent) {
+    auto* c = find(child);
+    if (!c) return;
+    if (c->parent != kInvalidNode) {
+        auto* old_p = find(c->parent);
+        if (old_p) {
+            auto& ch = old_p->children;
+            ch.erase(std::remove(ch.begin(), ch.end(), child), ch.end());
+        }
+    } else {
+        root_ids_.erase(std::remove(root_ids_.begin(), root_ids_.end(), child), root_ids_.end());
+    }
+    c->parent = new_parent;
+    if (new_parent == kInvalidNode) {
+        root_ids_.push_back(child);
+    } else {
+        auto* p = find(new_parent);
+        if (p) p->children.push_back(child);
+    }
+}
+
+void Scene::unparent(NodeId child) {
+    reparent(child, kInvalidNode);
+}
+
+void Scene::group_selected(const std::string& name) {
+    auto sels = selected_ids();
+    if (sels.empty()) return;
+    auto gid = add_group(name);
+    for (auto id : sels) reparent(id, gid);
+}
+
+void Scene::ungroup(NodeId group_id) {
+    auto* g = find(group_id);
+    if (!g) return;
+    auto kids = g->children;
+    NodeId new_parent = g->parent;
+    for (auto kid : kids) reparent(kid, new_parent);
+    remove_node(group_id);
+}
+
+std::vector<NodeId> Scene::descendants(NodeId id) const {
+    std::vector<NodeId> out;
+    auto* n = find(id);
+    if (!n) return out;
+    for (auto cid : n->children) {
+        out.push_back(cid);
+        auto sub = descendants(cid);
+        out.insert(out.end(), sub.begin(), sub.end());
+    }
+    return out;
+}
+
 void Scene::for_each(std::function<void(const SceneNode&)> fn) const {
     for (auto& n : nodes_) fn(n);
 }

@@ -664,6 +664,43 @@ void CommandRegistry::install_default_commands() {
             app.log(LogEntry::Info, std::to_string(app.document().scene().selection_count()) + " selected");
         }, {}});
 
+    r.register_command({"reparent", "reparent <child> <parent>", "Set parent",
+        [](App& app, std::istringstream& ss) {
+            unsigned int c, p;
+            if (!(ss >> c >> p)) return;
+            app.document().scene().reparent(c, p);
+            app.document().mark_dirty();
+        }, {}});
+    r.register_command({"unparent", "unparent <id>", "Move to root",
+        [](App& app, std::istringstream& ss) {
+            unsigned int id;
+            if (!(ss >> id)) return;
+            app.document().scene().unparent(id);
+            app.document().mark_dirty();
+        }, {}});
+    r.register_command({"group_sel", "group_sel <name>", "Group selected under new node",
+        [](App& app, std::istringstream& ss) {
+            std::string nm = "Group"; ss >> nm;
+            app.document().scene().group_selected(nm);
+            app.document().mark_dirty();
+        }, {"grp"}});
+    r.register_command({"ungroup", "ungroup", "Dissolve selected group",
+        [](App& app, std::istringstream&) {
+            auto sel = app.document().scene().selected_id();
+            if (!sel) return;
+            app.document().scene().ungroup(*sel);
+            app.document().mark_dirty();
+        }, {}});
+    r.register_command({"select_desc", "select_desc", "Add descendants to selection",
+        [](App& app, std::istringstream&) {
+            auto sels = app.document().scene().selected_ids();
+            for (auto id : sels) {
+                auto desc = app.document().scene().descendants(id);
+                for (auto d : desc) app.document().scene().add_to_selection(d);
+            }
+            app.document().mark_dirty();
+        }, {}});
+
     r.register_command({"screenshot", "screenshot [path] [w] [h]",
         "Render and save framebuffer to PNG",
         [](App& app, std::istringstream& ss) {

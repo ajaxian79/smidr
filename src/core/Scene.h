@@ -71,6 +71,12 @@ public:
 
     void remove_node(NodeId id);
 
+    void reparent(NodeId child, NodeId new_parent);
+    void unparent(NodeId child);
+    void group_selected(const std::string& name);
+    void ungroup(NodeId group_id);
+    std::vector<NodeId> descendants(NodeId id) const;
+
     SceneNode*       find(NodeId id);
     const SceneNode* find(NodeId id) const;
 
