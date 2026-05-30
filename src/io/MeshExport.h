@@ -16,5 +16,6 @@ bool export_vrml(const std::filesystem::path& path, const MeshGenerator& meshes)
 bool export_x3d(const std::filesystem::path& path, const MeshGenerator& meshes);
 bool export_gltf(const std::filesystem::path& path, const MeshGenerator& meshes);
 bool export_iges(const std::filesystem::path& path, const MeshGenerator& meshes);
+bool export_collada(const std::filesystem::path& path, const MeshGenerator& meshes);
 
 }  // namespace smidr

@@ -21,6 +21,9 @@ std::string detect_format(const std::filesystem::path& path) {
     if (ext == ".x3d") return "x3d";
     if (ext == ".iges" || ext == ".igs") return "iges";
     if (ext == ".step" || ext == ".stp") return "step";
+    if (ext == ".dae") return "collada";
+    if (ext == ".fbx") return "fbx";
+    if (ext == ".3dm") return "3dm";
     return "";
 }
 

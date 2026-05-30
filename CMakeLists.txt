@@ -151,7 +151,8 @@ add_library(smidr_io STATIC
     src/io/FormatGLTF.cpp
     src/io/FormatIGES.cpp
     src/io/FormatPLYWrite.cpp
-    src/io/FormatSTEP.cpp)
+    src/io/FormatSTEP.cpp
+    src/io/FormatMore.cpp)
 target_include_directories(smidr_io PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(smidr_io PUBLIC smidr_core)
