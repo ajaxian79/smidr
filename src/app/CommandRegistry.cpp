@@ -2,6 +2,7 @@
 #include "app/App.h"
 #include "app/Gizmo.h"
 #include "app/LightsAndAnim.h"
+#include "app/ScriptEngine.h"
 #include "core/Analysis.h"
 #include "core/PrimitivesAdvanced.h"
 #include "core/PrimitivesExtra.h"
@@ -609,6 +610,26 @@ void CommandRegistry::install_default_commands() {
                 app.log(LogEntry::Info, buf);
             }
         }, {"keyframe"}});
+
+    r.register_command({"script", "script <code>", "Run inline script",
+        [](App& app, std::istringstream& ss) {
+            std::string code;
+            std::getline(ss, code);
+            ScriptInterpreter interp(app);
+            interp.execute(code);
+        }, {"eval"}});
+
+    r.register_command({"run", "run <path>", "Run script file",
+        [](App& app, std::istringstream& ss) {
+            std::string path; ss >> path;
+            std::ifstream f(path);
+            if (!f.is_open()) { app.log(LogEntry::Error, "Cannot open " + path); return; }
+            std::string src((std::istreambuf_iterator<char>(f)),
+                             std::istreambuf_iterator<char>());
+            ScriptInterpreter interp(app);
+            interp.execute(src);
+            app.log(LogEntry::Info, "Ran " + path);
+        }, {"source"}});
 
     r.register_command({"stats", "stats", "Detailed mesh stats for selected",
         [](App& app, std::istringstream&) {
