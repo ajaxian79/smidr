@@ -8,6 +8,8 @@
 #include "core/PrimitivesAdvanced.h"
 #include "core/PrimitivesExtra.h"
 #include "core/MeshOps.h"
+#include "core/Slicer.h"
+#include "core/GCode.h"
 #include "io/MeshExport.h"
 #include "io/FormatImport.h"
 #include "render/RayTracer.h"
@@ -660,6 +662,54 @@ void CommandRegistry::install_default_commands() {
         [](App& app, std::istringstream&) {
             app.log(LogEntry::Info, std::to_string(app.document().scene().selection_count()) + " selected");
         }, {}});
+
+    r.register_command({"slice", "slice <step> [out.dxf]", "Slice mesh to DXF",
+        [](App& app, std::istringstream& ss) {
+            float step = 0.5f;
+            std::string out = "slices.dxf";
+            ss >> step >> out;
+            app.mesh_gen().rebuild(app.document().scene());
+            Mesh combined;
+            for (auto& e : app.mesh_gen().entries()) {
+                uint32_t off = static_cast<uint32_t>(combined.vertices.size());
+                for (auto& v : e.mesh.vertices) {
+                    Vertex tv;
+                    tv.position = e.transform.transform_point(v.position);
+                    tv.normal = e.transform.transform_normal(v.normal);
+                    combined.vertices.push_back(tv);
+                }
+                for (auto idx : e.mesh.indices) combined.indices.push_back(idx + off);
+            }
+            AABB bb = combined.bounds();
+            auto stack = slice_z_stack(combined, bb.min_pt.z, bb.max_pt.z, step);
+            if (export_slices_dxf(out, stack, bb.min_pt.z, step)) {
+                app.log(LogEntry::Info, "Sliced " + std::to_string(stack.size())
+                        + " layers into " + out);
+            } else { app.log(LogEntry::Error, "Slice export failed"); }
+        }, {}});
+
+    r.register_command({"gcode", "gcode [out.gcode] [layer_h]", "Generate G-code",
+        [](App& app, std::istringstream& ss) {
+            std::string out = "out.gcode";
+            float lh = 0.2f;
+            ss >> out >> lh;
+            app.mesh_gen().rebuild(app.document().scene());
+            Mesh combined;
+            for (auto& e : app.mesh_gen().entries()) {
+                uint32_t off = static_cast<uint32_t>(combined.vertices.size());
+                for (auto& v : e.mesh.vertices) {
+                    Vertex tv;
+                    tv.position = e.transform.transform_point(v.position);
+                    tv.normal = e.transform.transform_normal(v.normal);
+                    combined.vertices.push_back(tv);
+                }
+                for (auto idx : e.mesh.indices) combined.indices.push_back(idx + off);
+            }
+            GCodeSettings s; s.layer_height = lh;
+            if (generate_gcode(out, combined, s)) {
+                app.log(LogEntry::Info, "Wrote " + out);
+            } else { app.log(LogEntry::Error, "G-code failed"); }
+        }, {"3dprint"}});
 
     r.register_command({"asset", "asset list|spawn <name>", "Asset library",
         [](App& app, std::istringstream& ss) {
