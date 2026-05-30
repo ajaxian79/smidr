@@ -131,7 +131,10 @@ add_library(smidr_core STATIC
     src/core/Particles.cpp
     src/core/Dimension.cpp
     src/core/FEA.cpp
-    src/core/AdaptiveTess.cpp)
+    src/core/AdaptiveTess.cpp
+    src/core/ConvexHull.cpp
+    src/core/RigidBody.cpp
+    src/core/SoftBody.cpp)
 target_include_directories(smidr_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(smidr_core PUBLIC smidr_json)
